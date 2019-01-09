@@ -39,7 +39,6 @@ class Resources {
     static load(steg: Steg, callback: () => void) : void {
         this.callback = callback;
         this.steg = steg;
-        console.log(this.steg.audioContext);
 
         for (var i=0;i<this.added.length;i++) {
             this.added[i].load(this.steg, (res: Resource) => { this.resourceCallback(res); });

@@ -11,42 +11,38 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var Animations = /** @class */ (function () {
-    function Animations() {
+var Anim = /** @class */ (function () {
+    function Anim() {
     }
-    Animations.IDLE = "idle";
-    Animations.MOVE = "move";
-    Animations.ATTACK = "attack";
-    Animations.TREX = {
-        "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        "move": [10, 11, 12, 13, 14, 15, 16, 17],
-        "attack": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
-    };
-    return Animations;
+    Anim.IDLE = "idle";
+    Anim.MOVE = "move";
+    Anim.ATTACK = "attack";
+    return Anim;
 }());
+/// <reference path="Anim.ts"/>
 var Dino = /** @class */ (function () {
-    function Dino(tileset, anims, midpoint) {
+    function Dino(dinoData) {
         this.frame = 0;
         this.animSpeed = 0.5;
         this.facingRight = true;
-        this.tileset = tileset;
-        this.anims = anims;
-        this.anim = this.anims[Animations.IDLE];
+        this.tileset = dinoData.tileset;
+        this.dinoData = dinoData;
+        this.anim = this.dinoData.anims[Anim.IDLE];
         this.x = 100;
         this.y = 100;
         this.frame = 0;
-        this.midpoint = midpoint;
-        this.setAnim(Animations.IDLE);
+        this.midpoint = dinoData.midpoint;
+        this.setAnim(Anim.IDLE);
     }
     Dino.prototype.getAnimName = function () {
         return this.animName;
     };
     Dino.prototype.setAnim = function (anim) {
         this.animName = anim;
-        if (this.anim == this.anims[anim]) {
+        if (this.anim == this.dinoData.anims[anim]) {
             return;
         }
-        this.anim = this.anims[anim];
+        this.anim = this.dinoData.anims[anim];
         this.frame = 0;
     };
     Dino.prototype.setFacingRight = function (b) {
@@ -59,6 +55,9 @@ var Dino = /** @class */ (function () {
         }
         this.frame = this.frame % this.anim.length;
     };
+    Dino.prototype.attack = function () {
+        this.dinoData.roar.play(1.0);
+    };
     Dino.prototype.render = function (steg) {
         if (this.facingRight) {
             this.tileset.drawTile(steg, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
@@ -68,6 +67,55 @@ var Dino = /** @class */ (function () {
         }
     };
     return Dino;
+}());
+var Dinos = /** @class */ (function () {
+    function Dinos() {
+    }
+    Dinos.DATA = {
+        TREX: {
+            tilesetUrl: "img/dino1.png",
+            tileWidth: 256,
+            tileHeight: 128,
+            roarUrl: "audio/roar.mp3",
+            midpoint: 116,
+            tileset: null,
+            roar: null,
+            anims: {
+                "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "move": [10, 11, 12, 13, 14, 15, 16, 17],
+                "attack": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+            }
+        },
+        DIPO: {
+            tilesetUrl: "img/dino2.png",
+            tileWidth: 309,
+            tileHeight: 209,
+            roarUrl: "audio/roar.mp3",
+            midpoint: 148,
+            tileset: null,
+            roar: null,
+            anims: {
+                "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "move": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+                "attack": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+            }
+        },
+        DIME: {
+            tilesetUrl: "img/dino3.png",
+            tileWidth: 216,
+            tileHeight: 128,
+            roarUrl: "audio/roar.mp3",
+            midpoint: 80,
+            tileset: null,
+            roar: null,
+            anims: {
+                "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "move": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+                "attack": [25, 26, 27, 28, 29, 30, 31, 32]
+            }
+        }
+    };
+    return Dinos;
 }());
 // SIMPLE TYPESCRIPT ENGINE FOR GAMES
 var Steg = /** @class */ (function () {
@@ -90,7 +138,6 @@ var Steg = /** @class */ (function () {
         if (AudioContext) {
             console.log("Audio Context Being Created");
             this.audioContext = new AudioContext();
-            console.log(this.audioContext);
         }
         else {
             console.log("No Audio Context found");
@@ -335,7 +382,6 @@ var Resources = /** @class */ (function () {
         var _this = this;
         this.callback = callback;
         this.steg = steg;
-        console.log(this.steg.audioContext);
         for (var i = 0; i < this.added.length; i++) {
             this.added[i].load(this.steg, function (res) { _this.resourceCallback(res); });
         }
@@ -476,6 +522,8 @@ var Sound = /** @class */ (function () {
 /// <reference path="engine/Resources.ts"/>
 /// <reference path="engine/resources/Music.ts"/>
 /// <reference path="engine/resources/Sound.ts"/>
+/// <reference path="Anim.ts"/>
+/// <reference path="Dinos.ts"/>
 var Game = /** @class */ (function () {
     function Game() {
         this.scroll = 0;
@@ -491,17 +539,22 @@ var Game = /** @class */ (function () {
     }
     Game.prototype.init = function (steg) {
         this.music = Resources.loadMusic("audio/music.mp3");
-        this.roarSfx = Resources.loadSound("audio/roar.mp3");
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
         this.bg = Resources.laodBitmap("img/bg.png");
         this.fg = Resources.laodBitmap("img/fg.png");
         steg.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
-        this.trexTileset = Resources.loadTileset("img/dino1.png", 256, 128);
         this.ui = Resources.loadTileset("img/ui.png", 88, 92);
-        this.dino = new Dino(this.trexTileset, Animations.TREX, 114);
-        this.dino.setAnim(Animations.MOVE);
+        for (var d in Dinos.DATA) {
+            var dinoData = Dinos.DATA[d];
+            if (dinoData.midpoint) {
+                dinoData.roar = Resources.loadSound(dinoData.roarUrl);
+                dinoData.tileset = Resources.loadTileset(dinoData.tilesetUrl, dinoData.tileWidth, dinoData.tileHeight);
+            }
+        }
+        this.dino = new Dino(Dinos.DATA.DIME);
+        this.dino.setAnim(Anim.MOVE);
         this.dino.setFacingRight(false);
     };
     Game.prototype.loaded = function (steg) {
@@ -523,13 +576,13 @@ var Game = /** @class */ (function () {
         });
         this.scroll += this.move * 0.01;
         if (this.roar) {
-            if (this.dino.getAnimName() != Animations.ATTACK) {
-                this.dino.setAnim(Animations.ATTACK);
+            if (this.dino.getAnimName() != Anim.ATTACK) {
+                this.dino.setAnim(Anim.ATTACK);
             }
         }
         else {
             if (this.move != 0) {
-                this.dino.setAnim(Animations.MOVE);
+                this.dino.setAnim(Anim.MOVE);
                 // sound sfx
                 var now = new Date().getTime();
                 if (now - this.lastStep > Game.STEP_INTERVAL) {
@@ -539,7 +592,7 @@ var Game = /** @class */ (function () {
                 }
             }
             else {
-                this.dino.setAnim(Animations.IDLE);
+                this.dino.setAnim(Anim.IDLE);
             }
         }
         if (this.move < 0) {
@@ -607,8 +660,8 @@ var Game = /** @class */ (function () {
             this.right = id;
         }
         if (y > steg.canvas.height - 100) {
-            if (this.dino.getAnimName() != Animations.ATTACK) {
-                this.roarSfx.play(1.0);
+            if (this.dino.getAnimName() != Anim.ATTACK) {
+                this.dino.attack();
             }
             this.roar = id;
         }

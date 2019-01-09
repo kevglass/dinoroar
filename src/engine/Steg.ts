@@ -32,7 +32,6 @@ class Steg {
         if (AudioContext) {
             console.log("Audio Context Being Created");
             this.audioContext = new AudioContext();
-            console.log(this.audioContext);
         } else {
             console.log("No Audio Context found");
         }

@@ -1,6 +1,8 @@
+/// <reference path="Anim.ts"/>
+
 class Dino {
-    anims: any;
     anim: Array<number>;
+    dinoData: any;
     tileset: Tileset;
     x: number;
     y: number;
@@ -10,16 +12,16 @@ class Dino {
     facingRight: boolean = true;
     animName: string;
 
-    constructor(tileset: Tileset, anims: any, midpoint: number) {
-        this.tileset = tileset;
-        this.anims = anims;
-        this.anim = this.anims[Animations.IDLE];
+    constructor(dinoData: any) {
+        this.tileset = dinoData.tileset;
+        this.dinoData = dinoData;
+        this.anim = this.dinoData.anims[Anim.IDLE];
         this.x = 100;
         this.y = 100;
         this.frame = 0;
-        this.midpoint = midpoint;
+        this.midpoint = dinoData.midpoint;
 
-        this.setAnim(Animations.IDLE);
+        this.setAnim(Anim.IDLE);
     }
 
     getAnimName() : string {
@@ -29,10 +31,10 @@ class Dino {
     setAnim(anim: string): void {
         this.animName = anim;
 
-        if (this.anim == this.anims[anim]) {
+        if (this.anim == this.dinoData.anims[anim]) {
             return;
         }
-        this.anim = this.anims[anim];
+        this.anim = this.dinoData.anims[anim];
         this.frame = 0;
     }
 
@@ -50,6 +52,10 @@ class Dino {
         this.frame = this.frame % this.anim.length;
     }
 
+    attack() : void {
+        this.dinoData.roar.play(1.0);
+    }
+    
     render(steg: Steg): void {
         if (this.facingRight) {
             this.tileset.drawTile(steg, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);

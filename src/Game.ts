@@ -3,6 +3,8 @@
 /// <reference path="engine/Resources.ts"/>
 /// <reference path="engine/resources/Music.ts"/>
 /// <reference path="engine/resources/Sound.ts"/>
+/// <reference path="Anim.ts"/>
+/// <reference path="Dinos.ts"/>
 
 class Game implements Steggi {
     static STEP_INTERVAL : number = 300;
@@ -10,13 +12,11 @@ class Game implements Steggi {
     bg: Bitmap;
     fg: Bitmap;
     scroll: number = 0;
-
+    
     worldTileset: Tileset;
-    trexTileset: Tileset;
     ui: Tileset;
 
     music: Music;
-    roarSfx: Sound;
     stepSfx: Array<Sound> = [];
     step: number = 0;
     lastStep: number = 0;
@@ -34,18 +34,24 @@ class Game implements Steggi {
 
     init(steg: Steg): void {
         this.music = Resources.loadMusic("audio/music.mp3");
-        this.roarSfx = Resources.loadSound("audio/roar.mp3");
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
         this.bg = Resources.laodBitmap("img/bg.png");
         this.fg = Resources.laodBitmap("img/fg.png");
         steg.setStartImage(Resources.laodBitmap("img/start.png"));
-        
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
-        this.trexTileset = Resources.loadTileset("img/dino1.png", 256, 128);
         this.ui = Resources.loadTileset("img/ui.png", 88, 92);
-        this.dino = new Dino(this.trexTileset, Animations.TREX, 114);
-        this.dino.setAnim(Animations.MOVE);
+        
+        for (var d in Dinos.DATA) {
+            var dinoData = Dinos.DATA[d];
+            if (dinoData.midpoint) {
+                dinoData.roar = Resources.loadSound(dinoData.roarUrl);
+                dinoData.tileset = Resources.loadTileset(dinoData.tilesetUrl, dinoData.tileWidth, dinoData.tileHeight);
+            }
+        }
+        
+        this.dino = new Dino(Dinos.DATA.DIME);
+        this.dino.setAnim(Anim.MOVE);
         this.dino.setFacingRight(false);
     }
 
@@ -71,12 +77,12 @@ class Game implements Steggi {
         this.scroll += this.move * 0.01;
 
         if (this.roar) {
-            if (this.dino.getAnimName() != Animations.ATTACK) {
-                this.dino.setAnim(Animations.ATTACK);
+            if (this.dino.getAnimName() != Anim.ATTACK) {
+                this.dino.setAnim(Anim.ATTACK);
             }
         } else {
             if (this.move != 0) {
-                this.dino.setAnim(Animations.MOVE);
+                this.dino.setAnim(Anim.MOVE);
 
                 // sound sfx
                 var now = new Date().getTime();
@@ -86,7 +92,7 @@ class Game implements Steggi {
                     this.step = (this.step+1) % this.stepSfx.length;
                 }
             } else {
-                this.dino.setAnim(Animations.IDLE);
+                this.dino.setAnim(Anim.IDLE);
             }
         }
 
@@ -162,8 +168,8 @@ class Game implements Steggi {
             this.right = id;
         }
         if (y > steg.canvas.height - 100) {
-            if (this.dino.getAnimName() != Animations.ATTACK) {
-                this.roarSfx.play(1.0);
+            if (this.dino.getAnimName() != Anim.ATTACK) {
+                this.dino.attack();
             }
             
             this.roar = id;
