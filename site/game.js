@@ -71,8 +71,10 @@ var Dino = /** @class */ (function () {
 var Dinos = /** @class */ (function () {
     function Dinos() {
     }
+    Dinos.ORDER = ["TREX", "DIPO", "DIME", "FLAP"];
     Dinos.DATA = {
         TREX: {
+            name: "Rex",
             tilesetUrl: "img/dino1.png",
             tileWidth: 256,
             tileHeight: 128,
@@ -84,13 +86,15 @@ var Dinos = /** @class */ (function () {
                 "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 "move": [10, 11, 12, 13, 14, 15, 16, 17],
                 "attack": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
-            }
+            },
+            steps: true
         },
         DIPO: {
+            name: "Dippy",
             tilesetUrl: "img/dino2.png",
             tileWidth: 309,
             tileHeight: 209,
-            roarUrl: "audio/roar.mp3",
+            roarUrl: "audio/roar2.mp3",
             midpoint: 148,
             tileset: null,
             roar: null,
@@ -98,13 +102,15 @@ var Dinos = /** @class */ (function () {
                 "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 "move": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
                 "attack": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-            }
+            },
+            steps: true
         },
         DIME: {
+            name: "Freda",
             tilesetUrl: "img/dino3.png",
             tileWidth: 216,
             tileHeight: 128,
-            roarUrl: "audio/roar.mp3",
+            roarUrl: "audio/roar3.mp3",
             midpoint: 80,
             tileset: null,
             roar: null,
@@ -112,7 +118,24 @@ var Dinos = /** @class */ (function () {
                 "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 "move": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
                 "attack": [25, 26, 27, 28, 29, 30, 31, 32]
-            }
+            },
+            steps: true
+        },
+        FLAP: {
+            name: "Flapper",
+            tilesetUrl: "img/dino4.png",
+            tileWidth: 200,
+            tileHeight: 251,
+            roarUrl: "audio/roar4.mp3",
+            midpoint: 100,
+            tileset: null,
+            roar: null,
+            anims: {
+                "idle": [0, 1, 2, 3, 4],
+                "move": [0, 1, 2, 3, 4],
+                "attack": [0, 1, 2, 3, 4]
+            },
+            steps: false
         }
     };
     return Dinos;
@@ -151,7 +174,6 @@ var Steg = /** @class */ (function () {
         });
     };
     Steg.prototype.doStart = function () {
-        var _this = this;
         if (this.readyToStart) {
             if (!this.started) {
                 if (this.audioContext) {
@@ -162,30 +184,21 @@ var Steg = /** @class */ (function () {
                     Music.currentMusic.play();
                 }
                 this.started = true;
-                this.timer = setInterval(function () { _this.tick(); }, 1000 / this.fps);
             }
         }
     };
     Steg.prototype.drawLoadingScreen = function (loaded, total) {
+        var _this = this;
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
         this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
-        if (loaded == total) {
-            if (this.startImage) {
-                this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
-            }
-            else {
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.font = "20px Helvetica";
-                this.ctx.fillText("Tap or Click to Start", 50, 50);
-            }
-        }
-        else {
-            this.ctx.fillStyle = "#FFFFFF";
-            this.ctx.font = "20px Helvetica";
-            this.ctx.fillText("Loading " + loaded + "/" + total, 50, 50);
-            this.fillRect(50, 60, (this.canvas.width - 100), 20, "#555555");
-            this.fillRect(50, 60, (this.canvas.width - 100) * (loaded / total), 20, "#0000FF");
+        this.ctx.fillStyle = "#FFFFFF";
+        this.ctx.font = "20px Helvetica";
+        this.ctx.fillText("Loading " + loaded + "/" + total, 50, 50);
+        this.fillRect(50, 60, (this.canvas.width - 100), 20, "#555555");
+        this.fillRect(50, 60, (this.canvas.width - 100) * (loaded / total), 20, "#0000FF");
+        if (total == loaded) {
+            this.timer = setInterval(function () { _this.tick(); }, 1000 / this.fps);
         }
     };
     Steg.prototype.setupMouseHandler = function () {
@@ -268,8 +281,33 @@ var Steg = /** @class */ (function () {
     Steg.prototype.tick = function () {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
-        this.game.update(this);
-        this.game.render(this);
+        if (this.started) {
+            this.game.update(this);
+            this.game.render(this);
+        }
+        else {
+            this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
+            if (this.startImage) {
+                this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
+            }
+            else {
+                this.ctx.fillStyle = "#FFFFFF";
+                this.ctx.font = "20px Helvetica";
+                this.ctx.fillText("Tap or Click to Start", 50, 50);
+            }
+        }
+    };
+    Steg.prototype.setFontSize = function (size) {
+        this.ctx.font = size + "px Helvetica";
+    };
+    Steg.prototype.drawText = function (txt, x, y, col) {
+        this.ctx.fillStyle = col;
+        this.ctx.fillText(txt, x, y);
+    };
+    Steg.prototype.centerText = function (txt, y, col) {
+        this.ctx.fillStyle = col;
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(txt, this.canvas.width / 2, y);
     };
     Steg.prototype.fillRect = function (x, y, width, height, col) {
         this.ctx.fillStyle = col;
@@ -536,6 +574,8 @@ var Game = /** @class */ (function () {
         this.roar = 0;
         this.left = 0;
         this.right = 0;
+        this.showSelect = true;
+        this.currentSelectedIndex = 0;
     }
     Game.prototype.init = function (steg) {
         this.music = Resources.loadMusic("audio/music.mp3");
@@ -553,9 +593,12 @@ var Game = /** @class */ (function () {
                 dinoData.tileset = Resources.loadTileset(dinoData.tilesetUrl, dinoData.tileWidth, dinoData.tileHeight);
             }
         }
-        this.dino = new Dino(Dinos.DATA.DIME);
-        this.dino.setAnim(Anim.MOVE);
-        this.dino.setFacingRight(false);
+        this.selectedDinoData = Dinos.DATA.TREX;
+        this.selectDino(this.selectedDinoData);
+        this.selectedDino = new Dino(this.selectedDinoData);
+    };
+    Game.prototype.selectDino = function (dinoData) {
+        this.dino = new Dino(dinoData);
     };
     Game.prototype.loaded = function (steg) {
         this.music.play();
@@ -574,6 +617,7 @@ var Game = /** @class */ (function () {
         this.dino.update(steg, function () {
             _this.roar = 0;
         });
+        this.selectedDino.update(steg, function () { });
         this.scroll += this.move * 0.01;
         if (this.roar) {
             if (this.dino.getAnimName() != Anim.ATTACK) {
@@ -583,12 +627,14 @@ var Game = /** @class */ (function () {
         else {
             if (this.move != 0) {
                 this.dino.setAnim(Anim.MOVE);
-                // sound sfx
-                var now = new Date().getTime();
-                if (now - this.lastStep > Game.STEP_INTERVAL) {
-                    this.lastStep = now;
-                    this.stepSfx[this.step].play(0.6);
-                    this.step = (this.step + 1) % this.stepSfx.length;
+                if (this.selectedDinoData.steps) {
+                    // sound sfx for steps
+                    var now = new Date().getTime();
+                    if (now - this.lastStep > Game.STEP_INTERVAL) {
+                        this.lastStep = now;
+                        this.stepSfx[this.step].play(0.6);
+                        this.step = (this.step + 1) % this.stepSfx.length;
+                    }
                 }
             }
             else {
@@ -631,8 +677,22 @@ var Game = /** @class */ (function () {
         this.ui.drawTileScaled(steg, 5, 5, 44, 46, steg.getSoundOn() ? 3 : 8);
         this.ui.drawTileScaled(steg, 52, 5, 44, 46, steg.getMusicOn() ? 5 : 9);
         this.ui.drawTileScaled(steg, steg.canvas.width - 50, 5, 44, 46, 7);
+        if (this.showSelect) {
+            var offset = 40;
+            steg.fillRect(offset, offset, steg.canvas.width - (offset * 2), steg.canvas.height - (offset * 2), "rgba(0,0,0,0.8)");
+            this.ui.drawTile(steg, (steg.canvas.width / 2) - 200 - 80, (steg.canvas.height / 2), 11);
+            this.ui.drawTile(steg, (steg.canvas.width / 2) + 200, (steg.canvas.height / 2), 10);
+            this.selectedDino.x = (steg.canvas.width / 2);
+            this.selectedDino.y = (steg.canvas.height / 2);
+            this.selectedDino.render(steg);
+            steg.setFontSize(40);
+            steg.centerText(this.selectedDinoData.name, (steg.canvas.height / 2) + 60, "#fff");
+        }
     };
     Game.prototype.mouseUp = function (steg, id, x, y) {
+        if (this.showSelect) {
+            return;
+        }
         if (this.left == id) {
             this.left = 0;
         }
@@ -641,6 +701,29 @@ var Game = /** @class */ (function () {
         }
     };
     Game.prototype.mouseDown = function (steg, id, x, y) {
+        if (this.showSelect) {
+            if (x < (steg.canvas.width / 2) - 200) {
+                this.currentSelectedIndex--;
+                if (this.currentSelectedIndex < 0) {
+                    this.currentSelectedIndex = Dinos.ORDER.length - 1;
+                }
+                this.selectedDinoData = Dinos.DATA[Dinos.ORDER[this.currentSelectedIndex]];
+                this.selectedDino = new Dino(this.selectedDinoData);
+            }
+            else if (x > (steg.canvas.width / 2) + 200) {
+                this.currentSelectedIndex++;
+                if (this.currentSelectedIndex >= Dinos.ORDER.length) {
+                    this.currentSelectedIndex = 0;
+                }
+                this.selectedDinoData = Dinos.DATA[Dinos.ORDER[this.currentSelectedIndex]];
+                this.selectedDino = new Dino(this.selectedDinoData);
+            }
+            else if ((x > (steg.canvas.width / 2) - 200) && (x < (steg.canvas.width / 2) + 200)) {
+                this.selectDino(this.selectedDinoData);
+                this.showSelect = false;
+            }
+            return;
+        }
         if (y < 50) {
             if (x < 50) {
                 steg.setSoundOn(!steg.getSoundOn());
@@ -649,7 +732,7 @@ var Game = /** @class */ (function () {
                 steg.setMusicOn(!steg.getMusicOn());
             }
             else if (x > steg.canvas.width - 50) {
-                // go home to choose dinosaurs
+                this.showSelect = true;
             }
             return;
         }

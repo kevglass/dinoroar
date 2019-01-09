@@ -1,6 +1,6 @@
 // SIMPLE TYPESCRIPT ENGINE FOR GAMES
 class Steg {
-    static soundOn : boolean = true;
+    static soundOn: boolean = true;
     static musicOn: boolean = true;
     static audioReady: boolean = false;
 
@@ -23,7 +23,7 @@ class Steg {
         this.init();
     }
 
-    setStartImage(startImage: Bitmap) : void {
+    setStartImage(startImage: Bitmap): void {
         this.startImage = startImage;
     }
 
@@ -47,7 +47,7 @@ class Steg {
         });
     }
 
-    doStart() : void {
+    doStart(): void {
         if (this.readyToStart) {
             if (!this.started) {
                 if (this.audioContext) {
@@ -58,9 +58,8 @@ class Steg {
                 if (Music.currentMusic) {
                     Music.currentMusic.play();
                 }
-        
+
                 this.started = true;
-                this.timer = setInterval(() => { this.tick() }, 1000 / this.fps);
             }
         }
     }
@@ -69,21 +68,14 @@ class Steg {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
 
-        this.fillRect(0,0,this.canvas.width,this.canvas.height,"#000000");
-        if (loaded == total) {
-            if (this.startImage) {
-                this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
-            } else {
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.font = "20px Helvetica";
-                this.ctx.fillText("Tap or Click to Start", 50,50);
-            }
-        } else {
-            this.ctx.fillStyle = "#FFFFFF";
-            this.ctx.font = "20px Helvetica";
-            this.ctx.fillText("Loading "+loaded+"/"+total, 50,50);
-            this.fillRect(50,60,(this.canvas.width-100),20,"#555555");
-            this.fillRect(50,60,(this.canvas.width-100)*(loaded/total),20,"#0000FF");
+        this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000"); this.ctx.fillStyle = "#FFFFFF";
+        this.ctx.font = "20px Helvetica";
+        this.ctx.fillText("Loading " + loaded + "/" + total, 50, 50);
+        this.fillRect(50, 60, (this.canvas.width - 100), 20, "#555555");
+        this.fillRect(50, 60, (this.canvas.width - 100) * (loaded / total), 20, "#0000FF");
+
+        if (total == loaded) {
+            this.timer = setInterval(() => { this.tick() }, 1000 / this.fps);
         }
     }
 
@@ -126,14 +118,14 @@ class Steg {
         }
     }
 
-    setSoundOn(soundOn: boolean) : void {
+    setSoundOn(soundOn: boolean): void {
         if (!this.audioContext) {
             return;
         }
         Steg.soundOn = soundOn;
     }
 
-    getSoundOn() : boolean {
+    getSoundOn(): boolean {
         if (!this.audioContext) {
             return false;
         }
@@ -141,7 +133,7 @@ class Steg {
         return Steg.soundOn;
     }
 
-    setMusicOn(musicOn: boolean) : void {
+    setMusicOn(musicOn: boolean): void {
         if (!this.audioContext) {
             return;
         }
@@ -156,11 +148,11 @@ class Steg {
         }
     }
 
-    getMusicOn() : boolean {
+    getMusicOn(): boolean {
         if (!this.audioContext) {
             return false;
         }
-        
+
         return Steg.musicOn;
     }
 
@@ -184,8 +176,34 @@ class Steg {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
 
-        this.game.update(this);
-        this.game.render(this);
+        if (this.started) {
+            this.game.update(this);
+            this.game.render(this);
+        } else {
+            this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
+            if (this.startImage) {
+                this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
+            } else {
+                this.ctx.fillStyle = "#FFFFFF";
+                this.ctx.font = "20px Helvetica";
+                this.ctx.fillText("Tap or Click to Start", 50, 50);
+            }
+        }
+    }
+
+    setFontSize(size: number): void {
+        this.ctx.font = size + "px Helvetica";
+    }
+
+    drawText(txt: string, x: number, y: number, col: string): void {
+        this.ctx.fillStyle = col;
+        this.ctx.fillText(txt, x, y);
+    }
+
+    centerText(txt: string, y: number, col: string): void {
+        this.ctx.fillStyle = col;
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(txt, this.canvas.width / 2, y);
     }
 
     fillRect(x: number, y: number, width: number, height: number, col: string): void {

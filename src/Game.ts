@@ -32,6 +32,11 @@ class Game implements Steggi {
     left: number = 0;
     right: number = 0;
 
+    showSelect: boolean = true;
+    selectedDinoData: any;
+    selectedDino: Dino;
+    currentSelectedIndex: number = 0;
+
     init(steg: Steg): void {
         this.music = Resources.loadMusic("audio/music.mp3");
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
@@ -49,10 +54,14 @@ class Game implements Steggi {
                 dinoData.tileset = Resources.loadTileset(dinoData.tilesetUrl, dinoData.tileWidth, dinoData.tileHeight);
             }
         }
-        
-        this.dino = new Dino(Dinos.DATA.DIME);
-        this.dino.setAnim(Anim.MOVE);
-        this.dino.setFacingRight(false);
+
+        this.selectedDinoData = Dinos.DATA.TREX;
+        this.selectDino(this.selectedDinoData);
+        this.selectedDino = new Dino(this.selectedDinoData);
+    }
+
+    selectDino(dinoData) : void {
+        this.dino = new Dino(dinoData);
     }
 
     loaded(steg: Steg): void {
@@ -73,6 +82,7 @@ class Game implements Steggi {
         this.dino.update(steg, () => {
             this.roar = 0;
         });
+        this.selectedDino.update(steg, ()=>{});
 
         this.scroll += this.move * 0.01;
 
@@ -84,12 +94,14 @@ class Game implements Steggi {
             if (this.move != 0) {
                 this.dino.setAnim(Anim.MOVE);
 
-                // sound sfx
-                var now = new Date().getTime();
-                if (now - this.lastStep > Game.STEP_INTERVAL) {
-                    this.lastStep = now;
-                    this.stepSfx[this.step].play(0.6);
-                    this.step = (this.step+1) % this.stepSfx.length;
+                if (this.selectedDinoData.steps) {
+                    // sound sfx for steps
+                    var now = new Date().getTime();
+                    if (now - this.lastStep > Game.STEP_INTERVAL) {
+                        this.lastStep = now;
+                        this.stepSfx[this.step].play(0.6);
+                        this.step = (this.step+1) % this.stepSfx.length;
+                    }
                 }
             } else {
                 this.dino.setAnim(Anim.IDLE);
@@ -138,9 +150,27 @@ class Game implements Steggi {
         this.ui.drawTileScaled(steg, 5, 5, 44, 46, steg.getSoundOn() ? 3 : 8)
         this.ui.drawTileScaled(steg, 52, 5, 44, 46, steg.getMusicOn() ? 5 : 9)
         this.ui.drawTileScaled(steg, steg.canvas.width-50, 5, 44, 46, 7)
+
+        if (this.showSelect) {
+            var offset = 40;
+            steg.fillRect(offset, offset, steg.canvas.width - (offset*2), steg.canvas.height - (offset * 2), "rgba(0,0,0,0.8)");
+            this.ui.drawTile(steg, (steg.canvas.width / 2) - 200 - 80, (steg.canvas.height / 2), 11);
+            this.ui.drawTile(steg, (steg.canvas.width / 2) + 200, (steg.canvas.height / 2), 10);
+
+            this.selectedDino.x = (steg.canvas.width / 2);
+            this.selectedDino.y = (steg.canvas.height / 2);
+            this.selectedDino.render(steg);
+
+            steg.setFontSize(40);
+            steg.centerText(this.selectedDinoData.name, (steg.canvas.height / 2)+60, "#fff");
+        }
     }
 
     mouseUp(steg: Steg, id: number, x: number, y: number): void {
+        if (this.showSelect) {
+            return;
+        }
+
         if (this.left == id) {
             this.left = 0;
         }
@@ -150,13 +180,35 @@ class Game implements Steggi {
     }
 
     mouseDown(steg: Steg, id: number, x: number, y: number): void {
+        if (this.showSelect) {
+            if (x < (steg.canvas.width/2) - 200) {
+                this.currentSelectedIndex--;
+                if (this.currentSelectedIndex < 0) {
+                    this.currentSelectedIndex = Dinos.ORDER.length-1;
+                }
+                this.selectedDinoData = Dinos.DATA[Dinos.ORDER[this.currentSelectedIndex]];
+                this.selectedDino = new Dino(this.selectedDinoData);
+            } else if (x > (steg.canvas.width/2) + 200) {
+                this.currentSelectedIndex++;
+                if (this.currentSelectedIndex >= Dinos.ORDER.length) {
+                    this.currentSelectedIndex = 0
+                }
+                this.selectedDinoData = Dinos.DATA[Dinos.ORDER[this.currentSelectedIndex]];
+                this.selectedDino = new Dino(this.selectedDinoData);
+            } else if ((x > (steg.canvas.width/2)-200) && (x < (steg.canvas.width/2)+200)) {
+                this.selectDino(this.selectedDinoData);
+                this.showSelect = false;
+            }
+            return;
+        }
+
         if (y < 50) {
             if (x < 50) {
                 steg.setSoundOn(!steg.getSoundOn());
             } else if (x < 100) {
                 steg.setMusicOn(!steg.getMusicOn());
             } else if (x > steg.canvas.width - 50) {
-                // go home to choose dinosaurs
+                this.showSelect = true;
             }
             return;
         }
