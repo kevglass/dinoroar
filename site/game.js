@@ -576,6 +576,10 @@ var Game = /** @class */ (function () {
         this.right = 0;
         this.showSelect = true;
         this.currentSelectedIndex = 0;
+        this.props = [];
+        this.viewDistance = 5000;
+        this.propSep = 300;
+        this.propVar = 400;
     }
     Game.prototype.init = function (steg) {
         this.music = Resources.loadMusic("audio/music.mp3");
@@ -585,6 +589,7 @@ var Game = /** @class */ (function () {
         this.fg = Resources.laodBitmap("img/fg.png");
         steg.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
+        this.propTileset = Resources.loadTileset("img/props.png", 160, 128);
         this.ui = Resources.loadTileset("img/ui.png", 88, 92);
         for (var d in Dinos.DATA) {
             var dinoData = Dinos.DATA[d];
@@ -593,9 +598,42 @@ var Game = /** @class */ (function () {
                 dinoData.tileset = Resources.loadTileset(dinoData.tilesetUrl, dinoData.tileWidth, dinoData.tileHeight);
             }
         }
+        this.generateProps();
         this.selectedDinoData = Dinos.DATA.TREX;
         this.selectDino(this.selectedDinoData);
         this.selectedDino = new Dino(this.selectedDinoData);
+    };
+    Game.prototype.createProp = function (x) {
+        var prop = new Prop();
+        prop.x = x;
+        prop.type = Math.floor(Math.random() * 8);
+        prop.flip = Math.random() > 0.5;
+        this.props.push(prop);
+    };
+    Game.prototype.validateProps = function () {
+        for (var i = 0; i < this.props.length; i++) {
+            var prop = this.props[i];
+            var xp = prop.x - (this.scroll * this.speed);
+            var dx = Math.abs(xp);
+            if (dx > this.viewDistance) {
+                // remove the prop its too far away
+                this.props.splice(this.props.indexOf(prop), 1);
+                i--;
+                if (xp < 0) {
+                    this.createProp((this.scroll * this.speed) + this.viewDistance);
+                }
+                else {
+                    this.createProp((this.scroll * this.speed) - this.viewDistance);
+                }
+            }
+        }
+    };
+    Game.prototype.generateProps = function () {
+        var x = this.scroll - this.viewDistance;
+        while (x < this.scroll + this.viewDistance) {
+            this.createProp(x);
+            x += this.propSep + Math.floor(Math.random() * this.propVar);
+        }
     };
     Game.prototype.selectDino = function (dinoData) {
         this.dino = new Dino(dinoData);
@@ -647,6 +685,7 @@ var Game = /** @class */ (function () {
         if (this.move > 0) {
             this.dino.setFacingRight(true);
         }
+        this.validateProps();
     };
     Game.prototype.render = function (steg) {
         var bgScale = steg.canvas.height / 768;
@@ -668,15 +707,29 @@ var Game = /** @class */ (function () {
             this.worldTileset.drawTile(steg, xp, steg.canvas.height - 140, 2);
             this.worldTileset.drawTile(steg, xp, steg.canvas.height - 140 + 128, 11);
         }
+        // props
+        for (var i = 0; i < this.props.length; i++) {
+            var prop = this.props[i];
+            var xp = prop.x - (this.scroll * this.speed);
+            if (prop.flip) {
+                this.propTileset.drawTileReverse(steg, xp, steg.canvas.height - 140 - 125, prop.type);
+            }
+            else {
+                this.propTileset.drawTile(steg, xp, steg.canvas.height - 140 - 125, prop.type);
+            }
+        }
+        // dinos
         this.dino.x = Math.floor(steg.canvas.width / 2);
         this.dino.y = steg.canvas.height - 132;
         this.dino.render(steg);
+        // ui
         this.ui.drawTile(steg, steg.canvas.width - 100, ((steg.canvas.height / 2) - 50), 0);
         this.ui.drawTile(steg, 12, ((steg.canvas.height / 2) - 50), 1);
         this.ui.drawTile(steg, (steg.canvas.width / 2) - 44, steg.canvas.height - 100, 6);
         this.ui.drawTileScaled(steg, 5, 5, 44, 46, steg.getSoundOn() ? 3 : 8);
         this.ui.drawTileScaled(steg, 52, 5, 44, 46, steg.getMusicOn() ? 5 : 9);
         this.ui.drawTileScaled(steg, steg.canvas.width - 50, 5, 44, 46, 7);
+        // dino select box
         if (this.showSelect) {
             var offset = 40;
             steg.fillRect(offset, offset, steg.canvas.width - (offset * 2), steg.canvas.height - (offset * 2), "rgba(0,0,0,0.8)");
@@ -751,5 +804,10 @@ var Game = /** @class */ (function () {
     };
     Game.STEP_INTERVAL = 300;
     return Game;
+}());
+var Prop = /** @class */ (function () {
+    function Prop() {
+    }
+    return Prop;
 }());
 //# sourceMappingURL=game.js.map

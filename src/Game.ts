@@ -13,6 +13,7 @@ class Game implements Steggi {
     fg: Bitmap;
     scroll: number = 0;
     
+    propTileset: Tileset;
     worldTileset: Tileset;
     ui: Tileset;
 
@@ -37,6 +38,11 @@ class Game implements Steggi {
     selectedDino: Dino;
     currentSelectedIndex: number = 0;
 
+    props: Array<Prop> = [];
+    viewDistance: number = 5000;
+    propSep: number = 300;
+    propVar: number = 400;
+
     init(steg: Steg): void {
         this.music = Resources.loadMusic("audio/music.mp3");
         this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
@@ -45,6 +51,7 @@ class Game implements Steggi {
         this.fg = Resources.laodBitmap("img/fg.png");
         steg.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
+        this.propTileset = Resources.loadTileset("img/props.png", 160, 128);
         this.ui = Resources.loadTileset("img/ui.png", 88, 92);
         
         for (var d in Dinos.DATA) {
@@ -55,9 +62,46 @@ class Game implements Steggi {
             }
         }
 
+        this.generateProps();
+
         this.selectedDinoData = Dinos.DATA.TREX;
         this.selectDino(this.selectedDinoData);
         this.selectedDino = new Dino(this.selectedDinoData);
+    }
+
+    createProp(x : number): void {
+        var prop : Prop = new Prop();
+        prop.x = x;
+        prop.type = Math.floor(Math.random()*8);
+        prop.flip = Math.random() > 0.5;
+        this.props.push(prop);
+    }
+
+    validateProps() : void {
+        for (var i=0;i<this.props.length;i++) {
+            var prop : Prop = this.props[i];
+            var xp: number = prop.x - (this.scroll * this.speed);
+            var dx : number = Math.abs(xp);
+            if (dx > this.viewDistance) {
+                // remove the prop its too far away
+                this.props.splice(this.props.indexOf(prop), 1);
+                i--;
+
+                if (xp < 0) {
+                    this.createProp((this.scroll * this.speed) + this.viewDistance);
+                } else {
+                    this.createProp((this.scroll * this.speed)- this.viewDistance);
+                }
+            }
+        }
+    }
+
+    generateProps() : void {
+        var x : number = this.scroll - this.viewDistance;
+        while (x < this.scroll + this.viewDistance) {
+            this.createProp(x);
+            x += this.propSep + Math.floor(Math.random() * this.propVar);
+        }
     }
 
     selectDino(dinoData) : void {
@@ -115,6 +159,7 @@ class Game implements Steggi {
             this.dino.setFacingRight(true);
         }
 
+        this.validateProps();
     }
 
     render(steg: Steg): void {
@@ -140,10 +185,22 @@ class Game implements Steggi {
             this.worldTileset.drawTile(steg, xp, steg.canvas.height - 140 + 128, 11);
         }
 
+        // props
+        for (var i=0;i<this.props.length;i++) {
+            var prop: Prop = this.props[i];
+            var xp: number = prop.x - (this.scroll * this.speed);
+            if (prop.flip) {
+                this.propTileset.drawTileReverse(steg, xp, steg.canvas.height - 140 - 125, prop.type);
+            } else {
+                this.propTileset.drawTile(steg, xp, steg.canvas.height - 140 - 125, prop.type);
+            }
+        }
+        // dinos
         this.dino.x = Math.floor(steg.canvas.width / 2);
         this.dino.y = steg.canvas.height - 132;
         this.dino.render(steg);
 
+        // ui
         this.ui.drawTile(steg, steg.canvas.width - 100, ((steg.canvas.height / 2) - 50), 0);
         this.ui.drawTile(steg, 12, ((steg.canvas.height / 2) - 50), 1);
         this.ui.drawTile(steg, (steg.canvas.width / 2) - 44, steg.canvas.height - 100, 6);
@@ -151,6 +208,7 @@ class Game implements Steggi {
         this.ui.drawTileScaled(steg, 52, 5, 44, 46, steg.getMusicOn() ? 5 : 9)
         this.ui.drawTileScaled(steg, steg.canvas.width-50, 5, 44, 46, 7)
 
+        // dino select box
         if (this.showSelect) {
             var offset = 40;
             steg.fillRect(offset, offset, steg.canvas.width - (offset*2), steg.canvas.height - (offset * 2), "rgba(0,0,0,0.8)");
