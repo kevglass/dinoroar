@@ -1,5 +1,6 @@
 /// <reference path="Steg.ts"/>
 
+// STEG GAME INTERFACE
 interface Steggi {
 
     init(steg: Steg) : void;

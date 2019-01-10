@@ -581,8 +581,6 @@ var Sound = /** @class */ (function () {
 var Game = /** @class */ (function () {
     function Game() {
         this.scroll = 0;
-        this.stepSfx = [];
-        this.step = 0;
         this.lastStep = 0;
         this.count = 0;
         this.speed = 1000;
@@ -596,16 +594,18 @@ var Game = /** @class */ (function () {
         this.viewDistance = 5000;
         this.propSep = 300;
         this.propVar = 400;
+        this.effects = [];
     }
     Game.prototype.init = function (steg) {
         this.music = Resources.loadMusic("audio/music.mp3");
-        this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
-        this.stepSfx.push(Resources.loadSound("audio/step.mp3"));
+        this.stepSfx = Resources.loadSound("audio/step.mp3");
+        this.booshSfx = Resources.loadSound("audio/boosh.mp3");
         this.bg = Resources.laodBitmap("img/bg.png");
         this.fg = Resources.laodBitmap("img/fg.png");
         steg.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
         this.propTileset = Resources.loadTileset("img/props.png", 160, 128);
+        this.propCutTileset = Resources.loadTileset("img/props.png", 40, 32);
         this.ui = Resources.loadTileset("img/ui.png", 88, 92);
         for (var d in Dinos.DATA) {
             var dinoData = Dinos.DATA[d];
@@ -618,6 +618,9 @@ var Game = /** @class */ (function () {
         this.selectedDinoData = Dinos.DATA.TREX;
         this.selectDino(this.selectedDinoData);
         this.selectedDino = new Dino(this.selectedDinoData);
+    };
+    Game.prototype.addEffect = function (effect) {
+        this.effects.push(effect);
     };
     Game.prototype.createProp = function (x) {
         var prop = new Prop();
@@ -657,6 +660,25 @@ var Game = /** @class */ (function () {
     Game.prototype.loaded = function (steg) {
         this.music.play();
     };
+    Game.prototype.roarAtProps = function (steg) {
+        for (var i = 0; i < this.props.length; i++) {
+            var prop = this.props[i];
+            var xp = prop.x - (this.scroll * this.speed);
+            var dx = xp - (steg.canvas.width / 2);
+            if ((this.dino.facingRight) && (dx > 0) && (dx < 200)) {
+                if (prop.roared(this, steg)) {
+                    this.props.splice(this.props.indexOf(prop), 1);
+                    i--;
+                }
+            }
+            if ((!this.dino.facingRight) && (dx < 0) && (dx > -300)) {
+                if (prop.roared(this, steg)) {
+                    this.props.splice(this.props.indexOf(prop), 1);
+                    i--;
+                }
+            }
+        }
+    };
     Game.prototype.update = function (steg) {
         var _this = this;
         this.move = 0;
@@ -669,8 +691,19 @@ var Game = /** @class */ (function () {
             }
         }
         this.dino.update(steg, function () {
-            _this.roar = 0;
+            if (_this.roar != 0) {
+                _this.roar = 0;
+                _this.roarAtProps(steg);
+            }
         });
+        for (var i = 0; i < this.effects.length; i++) {
+            var effect = this.effects[i];
+            effect.update(steg);
+            if (effect.complete(steg)) {
+                this.effects.splice(i, 1);
+                i--;
+            }
+        }
         this.selectedDino.update(steg, function () { });
         this.scroll += this.move * 0.01;
         if (this.roar) {
@@ -686,8 +719,7 @@ var Game = /** @class */ (function () {
                     var now = new Date().getTime();
                     if (now - this.lastStep > Game.STEP_INTERVAL) {
                         this.lastStep = now;
-                        this.stepSfx[this.step].play(0.6);
-                        this.step = (this.step + 1) % this.stepSfx.length;
+                        this.stepSfx.play(0.6);
                     }
                 }
             }
@@ -738,6 +770,10 @@ var Game = /** @class */ (function () {
         this.dino.x = Math.floor(steg.canvas.width / 2);
         this.dino.y = steg.canvas.height - 132;
         this.dino.render(steg);
+        for (var i = 0; i < this.effects.length; i++) {
+            var effect = this.effects[i];
+            effect.render(steg, (this.scroll * this.speed));
+        }
         // ui
         this.ui.drawTile(steg, steg.canvas.width - 100, ((steg.canvas.height / 2) - 50), 0);
         this.ui.drawTile(steg, 12, ((steg.canvas.height / 2) - 50), 1);
@@ -821,9 +857,66 @@ var Game = /** @class */ (function () {
     Game.STEP_INTERVAL = 300;
     return Game;
 }());
+var PopEffect = /** @class */ (function () {
+    function PopEffect(tileset, type, x) {
+        this.init = false;
+        this.particles = [];
+        this.tileset = tileset;
+        this.type = type;
+        this.x = x;
+        this.tx = (type % 4);
+        this.ty = Math.floor(type / 4);
+        this.tx *= 4;
+        this.ty *= 4;
+        console.log("POP");
+    }
+    PopEffect.prototype.update = function (steg) {
+        if (!this.init) {
+            this.init = true;
+            for (var xp = 0; xp < 4; xp++) {
+                for (var yp = 0; yp < 4; yp++) {
+                    var px = this.x + (xp * 40);
+                    var py = steg.canvas.height - 140 - 125 + (yp * 32);
+                    var pt = (this.tx + xp) + (this.ty + (yp * 16));
+                    var vx = (xp - 2) * 5;
+                    var vy = (yp - 4) * 7;
+                    var a = 1;
+                    this.particles.push({ x: px, y: py, tile: pt, vx: vx, vy: vy, a: a });
+                }
+            }
+        }
+        for (var i = 0; i < this.particles.length; i++) {
+            var part = this.particles[i];
+            part.x += part.vx;
+            part.y += part.vy;
+            part.vx *= 0.95;
+            part.vy += 2;
+        }
+    };
+    PopEffect.prototype.render = function (steg, viewPos) {
+        for (var i = 0; i < this.particles.length; i++) {
+            var part = this.particles[i];
+            this.tileset.drawTile(steg, part.x - viewPos, part.y, part.tile);
+        }
+    };
+    PopEffect.prototype.complete = function (steg) {
+        return false;
+    };
+    return PopEffect;
+}());
 var Prop = /** @class */ (function () {
     function Prop() {
     }
+    Prop.prototype.roared = function (game, steg) {
+        // if its a stone
+        if ((this.type == 0) || (this.type == 1) || (this.type == 2)) {
+            // do a little particle effect
+            game.booshSfx.play(1.0);
+            game.addEffect(new PopEffect(game.propCutTileset, this.type, this.x));
+            return true;
+        }
+        return false;
+    };
     return Prop;
 }());
 //# sourceMappingURL=game.js.map
