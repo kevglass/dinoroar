@@ -71,7 +71,7 @@ var Dino = /** @class */ (function () {
 var Dinos = /** @class */ (function () {
     function Dinos() {
     }
-    Dinos.ORDER = ["TREX", "DIPO", "DIME", "FLAP", "RAPTOR"];
+    Dinos.ORDER = ["TREX", "DIPO", "DIME", "FLAP", "RAPTOR", "TRI"];
     Dinos.DATA = {
         TREX: {
             name: "Rex",
@@ -150,6 +150,22 @@ var Dinos = /** @class */ (function () {
                 "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 "move": [10, 11, 12, 13, 14, 15, 16, 17],
                 "attack": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+            },
+            steps: false
+        },
+        TRI: {
+            name: "Spike",
+            tilesetUrl: "img/dino6.png",
+            tileWidth: 225,
+            tileHeight: 124,
+            roarUrl: "audio/roar.mp3",
+            midpoint: 105,
+            tileset: null,
+            roar: null,
+            anims: {
+                "idle": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "move": [10, 11, 12, 13, 14, 15, 16, 17],
+                "attack": [18, 19, 20, 21, 22, 23, 24, 25]
             },
             steps: false
         }
