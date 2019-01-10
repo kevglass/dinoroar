@@ -151,7 +151,7 @@ var Dinos = /** @class */ (function () {
                 "move": [10, 11, 12, 13, 14, 15, 16, 17],
                 "attack": [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
             },
-            steps: false
+            steps: true
         },
         TRI: {
             name: "Spike",
@@ -167,7 +167,7 @@ var Dinos = /** @class */ (function () {
                 "move": [10, 11, 12, 13, 14, 15, 16, 17],
                 "attack": [18, 19, 20, 21, 22, 23, 24, 25]
             },
-            steps: false
+            steps: true
         }
     };
     return Dinos;
