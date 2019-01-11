@@ -1,8 +1,3 @@
-/// <reference path="engine/Core.ts"/>
-/// <reference path="engine/Game.ts"/>
-/// <reference path="engine/Resources.ts"/>
-/// <reference path="engine/resources/Music.ts"/>
-/// <reference path="engine/resources/Sound.ts"/>
 /// <reference path="Anim.ts"/>
 /// <reference path="Dinos.ts"/>
 
