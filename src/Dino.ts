@@ -42,7 +42,7 @@ class Dino {
         this.facingRight = b;
     }
 
-    update(steg: Steg, roarComplete: () => void): void {
+    update(core: steg.Core, roarComplete: () => void): void {
         this.frame += this.animSpeed;
 
         if (this.frame >= this.anim.length) {
@@ -55,12 +55,12 @@ class Dino {
     attack() : void {
         this.dinoData.roar.play(1.0);
     }
-    
-    render(steg: Steg): void {
+
+    render(core: Core): void {
         if (this.facingRight) {
-            this.tileset.drawTile(steg, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
+            this.tileset.drawTile(core, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
         } else {
-            this.tileset.drawTileReverse(steg, this.x - this.tileset.tileWidth + this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
+            this.tileset.drawTileReverse(core, this.x - this.tileset.tileWidth + this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
         }
     }
 }

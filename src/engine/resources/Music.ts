@@ -1,83 +1,85 @@
-/// <reference path="../Steg.ts"/>
+/// <reference path="../Core.ts"/>
 /// <reference path="Resource.ts"/>
 
-class Music implements Resource {
-    static currentMusic : Music;
+namespace steg {
 
-    audioBuffer: AudioBuffer;
-    url: string;
-    loaded: boolean = false;
-    audioContext: AudioContext;
-    lastSource: AudioBufferSourceNode;
+    export class Music implements Resource {
+        static currentMusic: Music;
 
-    constructor(url: string) {
-        this.url = url;
-    }
+        audioBuffer: AudioBuffer;
+        url: string;
+        loaded: boolean = false;
+        audioContext: AudioContext;
+        lastSource: AudioBufferSourceNode;
 
-    load(steg: Steg, callback: (res: Resource) => void): void {
-        if (!steg.audioContext) {
-            console.log("No audio context. No Sound");
-            callback(this);
-        } else {
-            this.audioContext = steg.audioContext;
-
-            var request = new XMLHttpRequest();
-            request.open('GET', this.url, true);
-            request.responseType = 'arraybuffer';
-
-            request.onload = () => {
-                steg.audioContext.decodeAudioData(request.response, (audioBuffer: AudioBuffer) => {
-                    this.audioBuffer = audioBuffer;
-                    callback(this);
-                });
-            };
-            request.onerror = (error) => { console.log(error) };
-            request.send();
+        constructor(url: string) {
+            this.url = url;
         }
-    }
 
-    private createSource(volume: number): AudioBufferSourceNode {
-        var bufferSource: AudioBufferSourceNode = this.audioContext.createBufferSource();
-        bufferSource.buffer = this.audioBuffer;
-        var gainNode = this.audioContext.createGain()
-        gainNode.gain.value = volume;
-        gainNode.connect(this.audioContext.destination)
-        bufferSource.connect(gainNode);
+        load(steg: Core, callback: (res: Resource) => void): void {
+            if (!steg.audioContext) {
+                console.log("No audio context. No Sound");
+                callback(this);
+            } else {
+                this.audioContext = steg.audioContext;
 
-        this.lastSource = bufferSource;
+                var request = new XMLHttpRequest();
+                request.open('GET', this.url, true);
+                request.responseType = 'arraybuffer';
 
-        return bufferSource;
-    }
-
-    playImpl(): void {
-        if ((Steg.musicOn) && (Steg.audioReady)) {
-            if (this.audioBuffer) {
-                var source: AudioBufferSourceNode = this.createSource(1.0);
-                source.loop = true;
-
-                source.start();
+                request.onload = () => {
+                    steg.audioContext.decodeAudioData(request.response, (audioBuffer: AudioBuffer) => {
+                        this.audioBuffer = audioBuffer;
+                        callback(this);
+                    });
+                };
+                request.onerror = (error) => { console.log(error) };
+                request.send();
             }
         }
-    }
 
-    play() : void {
-        if (Music.currentMusic) {
-            Music.currentMusic.stop();
+        private createSource(volume: number): AudioBufferSourceNode {
+            var bufferSource: AudioBufferSourceNode = this.audioContext.createBufferSource();
+            bufferSource.buffer = this.audioBuffer;
+            var gainNode = this.audioContext.createGain()
+            gainNode.gain.value = volume;
+            gainNode.connect(this.audioContext.destination)
+            bufferSource.connect(gainNode);
+
+            this.lastSource = bufferSource;
+
+            return bufferSource;
         }
-        Music.currentMusic = this;
-        this.playImpl();
-    }
 
-    stop() : void {
-        if (this.lastSource) {
-            this.lastSource.stop();
-            this.lastSource = null;
+        playImpl(): void {
+            if ((Core.musicOn) && (Core.audioReady)) {
+                if (this.audioBuffer) {
+                    var source: AudioBufferSourceNode = this.createSource(1.0);
+                    source.loop = true;
+
+                    source.start();
+                }
+            }
         }
-    }
-    
-    getName(): string {
-        return "Music [" + this.url + "]";
-    }
 
+        play(): void {
+            if (Music.currentMusic) {
+                Music.currentMusic.stop();
+            }
+            Music.currentMusic = this;
+            this.playImpl();
+        }
 
+        stop(): void {
+            if (this.lastSource) {
+                this.lastSource.stop();
+                this.lastSource = null;
+            }
+        }
+
+        getName(): string {
+            return "Music [" + this.url + "]";
+        }
+
+    }
 }

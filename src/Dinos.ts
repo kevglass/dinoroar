@@ -87,7 +87,7 @@ class Dinos {
             steps: true
         },
 
-        TRI: {
+        TRI: { 
             name: "Spike",
             tilesetUrl: "img/dino6.png",
             tileWidth: 225,

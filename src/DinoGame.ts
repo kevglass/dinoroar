@@ -1,12 +1,20 @@
-/// <reference path="engine/Steg.ts"/>
-/// <reference path="engine/Steggi.ts"/>
+/// <reference path="engine/Core.ts"/>
+/// <reference path="engine/Game.ts"/>
 /// <reference path="engine/Resources.ts"/>
 /// <reference path="engine/resources/Music.ts"/>
 /// <reference path="engine/resources/Sound.ts"/>
 /// <reference path="Anim.ts"/>
 /// <reference path="Dinos.ts"/>
 
-class Game implements Steggi {
+import Core = steg.Core;
+import Game = steg.Game;
+import Resources = steg.Resources;
+import Bitmap = steg.Bitmap;
+import Sound = steg.Sound;
+import Music = steg.Music;
+import Tileset = steg.Tileset;
+
+class DinoGame implements Game {
     static STEP_INTERVAL: number = 300;
 
     bg: Bitmap;
@@ -46,13 +54,13 @@ class Game implements Steggi {
 
     effects: Array<Effect> = [];
 
-    init(steg: Steg): void {
+    init(core: Core): void {
         this.music = Resources.loadMusic("audio/music.mp3");
         this.stepSfx = Resources.loadSound("audio/step.mp3");
         this.booshSfx = Resources.loadSound("audio/boosh.mp3");
         this.bg = Resources.laodBitmap("img/bg.png");
         this.fg = Resources.laodBitmap("img/fg.png");
-        steg.setStartImage(Resources.laodBitmap("img/start.png"));
+        core.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
         this.propTileset = Resources.loadTileset("img/props.png", 160, 128);
         this.propCutTileset = Resources.loadTileset("img/props.png", 40, 32);
@@ -116,24 +124,24 @@ class Game implements Steggi {
         this.dino = new Dino(dinoData);
     }
 
-    loaded(steg: Steg): void {
+    loaded(core: Core): void {
         this.music.play();
     }
 
-    roarAtProps(steg: Steg): void {
+    roarAtProps(core: Core): void {
         for (var i = 0; i < this.props.length; i++) {
             var prop: Prop = this.props[i];
             var xp: number = prop.x - (this.scroll * this.speed);
-            var dx: number = xp - (steg.canvas.width / 2);
+            var dx: number = xp - (core.canvas.width / 2);
 
             if ((this.dino.facingRight) && (dx > 0) && (dx < 200)) {
-                if (prop.roared(this, steg)) {
+                if (prop.roared(this, core)) {
                     this.props.splice(this.props.indexOf(prop), 1);
                     i--;
                 }
             }
             if ((!this.dino.facingRight) && (dx < 0) && (dx > -300)) {
-                if (prop.roared(this, steg)) {
+                if (prop.roared(this, core)) {
                     this.props.splice(this.props.indexOf(prop), 1);
                     i--;
                 }
@@ -142,7 +150,7 @@ class Game implements Steggi {
         }
     }
 
-    update(steg: Steg): void {
+    update(core: Core): void {
         this.move = 0;
         if (!this.roar) {
             if ((this.left && !this.right)) {
@@ -153,23 +161,23 @@ class Game implements Steggi {
             }
         }
 
-        this.dino.update(steg, () => {
+        this.dino.update(core, () => {
             if (this.roar != 0) {
                 this.roar = 0;
-                this.roarAtProps(steg);
+                this.roarAtProps(core);
             }
         });
 
         for (var i = 0; i < this.effects.length; i++) {
             var effect: Effect = this.effects[i];
-            effect.update(steg);
-            if (effect.complete(steg)) {
+            effect.update(core);
+            if (effect.complete(core)) {
                 this.effects.splice(i, 1);
                 i--;
             }
         }
 
-        this.selectedDino.update(steg, () => { });
+        this.selectedDino.update(core, () => { });
 
         this.scroll += this.move * 0.01;
 
@@ -184,7 +192,7 @@ class Game implements Steggi {
                 if (this.selectedDinoData.steps) {
                     // sound sfx for steps
                     var now = new Date().getTime();
-                    if (now - this.lastStep > Game.STEP_INTERVAL) {
+                    if (now - this.lastStep > DinoGame.STEP_INTERVAL) {
                         this.lastStep = now;
                         this.stepSfx.play(0.6);
                     }
@@ -204,7 +212,7 @@ class Game implements Steggi {
         this.validateProps();
     }
 
-    render(steg: Steg): void {
+    render(steg: Core): void {
         var bgScale: number = steg.canvas.height / 768;
         var bgWidth: number = 1280 * bgScale;
         var bgCount: number = Math.floor(steg.canvas.width / bgWidth) + 2;
@@ -271,7 +279,7 @@ class Game implements Steggi {
         }
     }
 
-    mouseUp(steg: Steg, id: number, x: number, y: number): void {
+    mouseUp(steg: Core, id: number, x: number, y: number): void {
         if (this.showSelect) {
             return;
         }
@@ -284,7 +292,7 @@ class Game implements Steggi {
         }
     }
 
-    mouseDown(steg: Steg, id: number, x: number, y: number): void {
+    mouseDown(steg: Core, id: number, x: number, y: number): void {
         if (this.showSelect) {
             if (x < (steg.canvas.width / 2) - 200) {
                 this.currentSelectedIndex--;

@@ -48,7 +48,7 @@ var Dino = /** @class */ (function () {
     Dino.prototype.setFacingRight = function (b) {
         this.facingRight = b;
     };
-    Dino.prototype.update = function (steg, roarComplete) {
+    Dino.prototype.update = function (core, roarComplete) {
         this.frame += this.animSpeed;
         if (this.frame >= this.anim.length) {
             roarComplete();
@@ -58,16 +58,464 @@ var Dino = /** @class */ (function () {
     Dino.prototype.attack = function () {
         this.dinoData.roar.play(1.0);
     };
-    Dino.prototype.render = function (steg) {
+    Dino.prototype.render = function (core) {
         if (this.facingRight) {
-            this.tileset.drawTile(steg, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
+            this.tileset.drawTile(core, this.x - this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
         }
         else {
-            this.tileset.drawTileReverse(steg, this.x - this.tileset.tileWidth + this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
+            this.tileset.drawTileReverse(core, this.x - this.tileset.tileWidth + this.midpoint, this.y - this.tileset.tileHeight, this.anim[Math.floor(this.frame)]);
         }
     };
     return Dino;
 }());
+// SIMPLE TYPESCRIPT ENGINE FOR GAMES
+var steg;
+// SIMPLE TYPESCRIPT ENGINE FOR GAMES
+(function (steg) {
+    var Core = /** @class */ (function () {
+        function Core(canvas, game) {
+            this.fps = 20;
+            this.readyToStart = false;
+            this.started = false;
+            this.game = game;
+            this.canvas = canvas;
+        }
+        Core.prototype.start = function () {
+            this.init();
+        };
+        Core.prototype.setStartImage = function (startImage) {
+            this.startImage = startImage;
+        };
+        Core.prototype.init = function () {
+            var _this = this;
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                console.log("Audio Context Being Created");
+                this.audioContext = new AudioContext();
+            }
+            else {
+                console.log("No Audio Context found");
+            }
+            this.setupMouseHandler();
+            this.ctx = this.canvas.getContext("2d");
+            this.game.init(this);
+            steg.Resources.load(this, function () {
+                _this.game.loaded(_this);
+                _this.readyToStart = true;
+            });
+        };
+        Core.prototype.doStart = function () {
+            if (this.readyToStart) {
+                if (!this.started) {
+                    if (this.audioContext) {
+                        this.audioContext.resume();
+                    }
+                    Core.audioReady = true;
+                    if (steg.Music.currentMusic) {
+                        steg.Music.currentMusic.play();
+                    }
+                    this.started = true;
+                }
+            }
+        };
+        Core.prototype.drawLoadingScreen = function (loaded, total) {
+            var _this = this;
+            this.canvas.width = this.canvas.clientWidth;
+            this.canvas.height = this.canvas.clientHeight;
+            this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.font = "20px Helvetica";
+            this.ctx.fillText("Loading " + loaded + "/" + total, 50, 50);
+            this.fillRect(50, 60, (this.canvas.width - 100), 20, "#555555");
+            this.fillRect(50, 60, (this.canvas.width - 100) * (loaded / total), 20, "#0000FF");
+            if (total == loaded) {
+                this.timer = setInterval(function () { _this.tick(); }, 1000 / this.fps);
+            }
+        };
+        Core.prototype.setupMouseHandler = function () {
+            var _this = this;
+            var hasTouchStartEvent = 'ontouchstart' in document.createElement('div');
+            if (!hasTouchStartEvent) {
+                this.canvas.onmousedown = function (e) {
+                    e.preventDefault();
+                    _this.invokeMouseDown(1, e.offsetX, e.offsetY);
+                };
+                this.canvas.onmouseup = function (e) {
+                    e.preventDefault();
+                    _this.invokeMouseUp(1, e.offsetX, e.offsetY);
+                };
+                this.canvas.onmousemove = function (e) {
+                    e.preventDefault();
+                    _this.invokeMouseMove(1, e.offsetX, e.offsetY);
+                };
+            }
+            else {
+                this.canvas.ontouchstart = function (e) {
+                    e.preventDefault();
+                    for (var i = 0; i < e.changedTouches.length; i++) {
+                        _this.invokeMouseDown(e.changedTouches.item(i).identifier, e.changedTouches.item(i).pageX, e.changedTouches.item(i).pageY);
+                    }
+                };
+                this.canvas.ontouchend = function (e) {
+                    e.preventDefault();
+                    for (var i = 0; i < e.changedTouches.length; i++) {
+                        _this.invokeMouseUp(e.changedTouches.item(i).identifier, e.changedTouches.item(i).pageX, e.changedTouches.item(i).pageY);
+                    }
+                };
+                this.canvas.ontouchmove = function (e) {
+                    e.preventDefault();
+                };
+            }
+        };
+        Core.prototype.setSoundOn = function (soundOn) {
+            if (!this.audioContext) {
+                return;
+            }
+            Core.soundOn = soundOn;
+        };
+        Core.prototype.getSoundOn = function () {
+            if (!this.audioContext) {
+                return false;
+            }
+            return Core.soundOn;
+        };
+        Core.prototype.setMusicOn = function (musicOn) {
+            if (!this.audioContext) {
+                return;
+            }
+            Core.musicOn = musicOn;
+            if (steg.Music.currentMusic) {
+                if (musicOn) {
+                    steg.Music.currentMusic.play();
+                }
+                else {
+                    steg.Music.currentMusic.stop();
+                }
+            }
+        };
+        Core.prototype.getMusicOn = function () {
+            if (!this.audioContext) {
+                return false;
+            }
+            return Core.musicOn;
+        };
+        Core.prototype.invokeMouseDown = function (id, x, y) {
+            this.doStart();
+            this.game.mouseDown(this, id + 1, x, y);
+        };
+        Core.prototype.invokeMouseUp = function (id, x, y) {
+            this.doStart();
+            this.game.mouseUp(this, id + 1, x, y);
+        };
+        Core.prototype.invokeMouseMove = function (id, x, y) {
+        };
+        Core.prototype.tick = function () {
+            this.canvas.width = this.canvas.clientWidth;
+            this.canvas.height = this.canvas.clientHeight;
+            if (this.started) {
+                this.game.update(this);
+                this.game.render(this);
+            }
+            else {
+                this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
+                if (this.startImage) {
+                    this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
+                }
+                else {
+                    this.ctx.fillStyle = "#FFFFFF";
+                    this.ctx.font = "20px Helvetica";
+                    this.ctx.fillText("Tap or Click to Start", 50, 50);
+                }
+            }
+        };
+        Core.prototype.setFontSize = function (size) {
+            this.ctx.font = size + "px Helvetica";
+        };
+        Core.prototype.drawText = function (txt, x, y, col) {
+            this.ctx.fillStyle = col;
+            this.ctx.fillText(txt, x, y);
+        };
+        Core.prototype.centerText = function (txt, y, col) {
+            this.ctx.fillStyle = col;
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(txt, this.canvas.width / 2, y);
+        };
+        Core.prototype.fillRect = function (x, y, width, height, col) {
+            this.ctx.fillStyle = col;
+            this.ctx.fillRect(x, y, width, height);
+        };
+        Core.soundOn = true;
+        Core.musicOn = true;
+        Core.audioReady = false;
+        return Core;
+    }());
+    steg.Core = Core;
+})(steg || (steg = {}));
+/// <reference path="Core.ts"/>
+/// <reference path="../Core.ts"/>
+var steg;
+/// <reference path="../Core.ts"/>
+(function (steg_1) {
+    var Bitmap = /** @class */ (function () {
+        function Bitmap(url) {
+            this.url = url;
+        }
+        Bitmap.prototype.load = function (steg, callback) {
+            var _this = this;
+            this.image = new Image();
+            this.image.onload = function () {
+                _this.loaded();
+                callback(_this);
+            };
+            this.image.src = this.url;
+        };
+        Bitmap.prototype.loaded = function () {
+            this.width = this.image.width;
+            this.height = this.image.height;
+        };
+        Bitmap.prototype.drawScaled = function (steg, x, y, width, height) {
+            var ctx = steg.ctx;
+            ctx.drawImage(this.image, x, y, width, height);
+        };
+        Bitmap.prototype.draw = function (steg, x, y) {
+            var ctx = steg.ctx;
+            ctx.drawImage(this.image, x, y);
+        };
+        Bitmap.prototype.getName = function () {
+            return "Bitmap [" + this.url + "]";
+        };
+        return Bitmap;
+    }());
+    steg_1.Bitmap = Bitmap;
+})(steg || (steg = {}));
+/// <reference path="Bitmap.ts"/>
+var steg;
+/// <reference path="Bitmap.ts"/>
+(function (steg_2) {
+    var Tileset = /** @class */ (function (_super) {
+        __extends(Tileset, _super);
+        function Tileset(url, tileWidth, tileHeight) {
+            var _this = _super.call(this, url) || this;
+            _this.tileWidth = tileWidth;
+            _this.tileHeight = tileHeight;
+            return _this;
+        }
+        Tileset.prototype.loaded = function () {
+            this.scanline = Math.floor(this.image.width / this.tileWidth);
+        };
+        Tileset.prototype.getName = function () {
+            return "Tileset [" + this.url + "]";
+        };
+        Tileset.prototype.drawTile = function (steg, x, y, tile) {
+            var xp = Math.floor(tile % this.scanline);
+            var yp = Math.floor(tile / this.scanline);
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, this.tileWidth, this.tileHeight);
+        };
+        Tileset.prototype.drawTileScaled = function (steg, x, y, width, height, tile) {
+            var xp = Math.floor(tile % this.scanline);
+            var yp = Math.floor(tile / this.scanline);
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, width, height);
+        };
+        Tileset.prototype.drawTileReverse = function (steg, x, y, tile) {
+            var xp = Math.floor(tile % this.scanline);
+            var yp = Math.floor(tile / this.scanline);
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
+            steg.ctx.scale(-1, 1);
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, -(x + this.tileWidth), y, this.tileWidth, this.tileHeight);
+            steg.ctx.scale(-1, 1);
+        };
+        return Tileset;
+    }(steg_2.Bitmap));
+    steg_2.Tileset = Tileset;
+})(steg || (steg = {}));
+/// <reference path="resources/Resource.ts"/>
+/// <reference path="resources/Bitmap.ts"/>
+/// <reference path="resources/Tileset.ts"/>
+var steg;
+/// <reference path="resources/Resource.ts"/>
+/// <reference path="resources/Bitmap.ts"/>
+/// <reference path="resources/Tileset.ts"/>
+(function (steg_3) {
+    var Resources = /** @class */ (function () {
+        function Resources() {
+        }
+        Resources.loadMusic = function (url) {
+            var music = new steg_3.Music(url);
+            this.added.push(music);
+            return music;
+        };
+        Resources.loadSound = function (url) {
+            var sound = new steg_3.Sound(url);
+            this.added.push(sound);
+            return sound;
+        };
+        Resources.laodBitmap = function (url) {
+            var bitmap = new steg_3.Bitmap(url);
+            this.added.push(bitmap);
+            return bitmap;
+        };
+        Resources.loadTileset = function (url, tileWidth, tileHeight) {
+            var tileset = new steg_3.Tileset(url, tileWidth, tileHeight);
+            this.added.push(tileset);
+            return tileset;
+        };
+        Resources.load = function (steg, callback) {
+            var _this = this;
+            this.callback = callback;
+            this.steg = steg;
+            for (var i = 0; i < this.added.length; i++) {
+                this.added[i].load(this.steg, function (res) { _this.resourceCallback(res); });
+            }
+            steg.drawLoadingScreen(this.loaded.length, this.added.length);
+            if (this.loaded.length == this.added.length) {
+                this.callback();
+            }
+        };
+        Resources.resourceCallback = function (res) {
+            console.log("Loaded: " + res.getName());
+            this.loaded.push(res);
+            this.steg.drawLoadingScreen(this.loaded.length, this.added.length);
+            if (this.loaded.length == this.added.length) {
+                this.callback();
+            }
+        };
+        Resources.added = [];
+        Resources.loaded = [];
+        return Resources;
+    }());
+    steg_3.Resources = Resources;
+})(steg || (steg = {}));
+/// <reference path="../Core.ts"/>
+/// <reference path="Resource.ts"/>
+var steg;
+/// <reference path="../Core.ts"/>
+/// <reference path="Resource.ts"/>
+(function (steg_4) {
+    var Music = /** @class */ (function () {
+        function Music(url) {
+            this.loaded = false;
+            this.url = url;
+        }
+        Music.prototype.load = function (steg, callback) {
+            var _this = this;
+            if (!steg.audioContext) {
+                console.log("No audio context. No Sound");
+                callback(this);
+            }
+            else {
+                this.audioContext = steg.audioContext;
+                var request = new XMLHttpRequest();
+                request.open('GET', this.url, true);
+                request.responseType = 'arraybuffer';
+                request.onload = function () {
+                    steg.audioContext.decodeAudioData(request.response, function (audioBuffer) {
+                        _this.audioBuffer = audioBuffer;
+                        callback(_this);
+                    });
+                };
+                request.onerror = function (error) { console.log(error); };
+                request.send();
+            }
+        };
+        Music.prototype.createSource = function (volume) {
+            var bufferSource = this.audioContext.createBufferSource();
+            bufferSource.buffer = this.audioBuffer;
+            var gainNode = this.audioContext.createGain();
+            gainNode.gain.value = volume;
+            gainNode.connect(this.audioContext.destination);
+            bufferSource.connect(gainNode);
+            this.lastSource = bufferSource;
+            return bufferSource;
+        };
+        Music.prototype.playImpl = function () {
+            if ((steg_4.Core.musicOn) && (steg_4.Core.audioReady)) {
+                if (this.audioBuffer) {
+                    var source = this.createSource(1.0);
+                    source.loop = true;
+                    source.start();
+                }
+            }
+        };
+        Music.prototype.play = function () {
+            if (Music.currentMusic) {
+                Music.currentMusic.stop();
+            }
+            Music.currentMusic = this;
+            this.playImpl();
+        };
+        Music.prototype.stop = function () {
+            if (this.lastSource) {
+                this.lastSource.stop();
+                this.lastSource = null;
+            }
+        };
+        Music.prototype.getName = function () {
+            return "Music [" + this.url + "]";
+        };
+        return Music;
+    }());
+    steg_4.Music = Music;
+})(steg || (steg = {}));
+/// <reference path="Resource.ts"/>
+var steg;
+/// <reference path="Resource.ts"/>
+(function (steg_5) {
+    var Sound = /** @class */ (function () {
+        function Sound(url) {
+            this.loaded = false;
+            this.url = url;
+        }
+        Sound.prototype.load = function (steg, callback) {
+            var _this = this;
+            if (!steg.audioContext) {
+                console.log("No audio context. No Sound");
+                callback(this);
+            }
+            else {
+                this.audioContext = steg.audioContext;
+                var request = new XMLHttpRequest();
+                request.open('GET', this.url, true);
+                request.responseType = 'arraybuffer';
+                request.onload = function () {
+                    steg.audioContext.decodeAudioData(request.response, function (audioBuffer) {
+                        _this.audioBuffer = audioBuffer;
+                        callback(_this);
+                    });
+                };
+                request.onerror = function (error) { console.log(error); };
+                request.send();
+            }
+        };
+        Sound.prototype.createSource = function (volume) {
+            var bufferSource = this.audioContext.createBufferSource();
+            bufferSource.buffer = this.audioBuffer;
+            var gainNode = this.audioContext.createGain();
+            gainNode.gain.value = volume;
+            gainNode.connect(this.audioContext.destination);
+            bufferSource.connect(gainNode);
+            return bufferSource;
+        };
+        Sound.prototype.play = function (volume) {
+            if ((steg_5.Core.soundOn) && (steg_5.Core.audioReady)) {
+                if (this.audioBuffer) {
+                    var source = this.createSource(volume);
+                    source.loop = false;
+                    source.start();
+                }
+            }
+        };
+        Sound.prototype.getName = function () {
+            return "Sound [" + this.url + "]";
+        };
+        return Sound;
+    }());
+    steg_5.Sound = Sound;
+})(steg || (steg = {}));
 var Dinos = /** @class */ (function () {
     function Dinos() {
     }
@@ -172,430 +620,21 @@ var Dinos = /** @class */ (function () {
     };
     return Dinos;
 }());
-// SIMPLE TYPESCRIPT ENGINE FOR GAMES
-var Steg = /** @class */ (function () {
-    function Steg(canvas, game) {
-        this.fps = 20;
-        this.readyToStart = false;
-        this.started = false;
-        this.game = game;
-        this.canvas = canvas;
-    }
-    Steg.prototype.start = function () {
-        this.init();
-    };
-    Steg.prototype.setStartImage = function (startImage) {
-        this.startImage = startImage;
-    };
-    Steg.prototype.init = function () {
-        var _this = this;
-        var AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) {
-            console.log("Audio Context Being Created");
-            this.audioContext = new AudioContext();
-        }
-        else {
-            console.log("No Audio Context found");
-        }
-        this.setupMouseHandler();
-        this.ctx = this.canvas.getContext("2d");
-        this.game.init(this);
-        Resources.load(this, function () {
-            _this.game.loaded(_this);
-            _this.readyToStart = true;
-        });
-    };
-    Steg.prototype.doStart = function () {
-        if (this.readyToStart) {
-            if (!this.started) {
-                if (this.audioContext) {
-                    this.audioContext.resume();
-                }
-                Steg.audioReady = true;
-                if (Music.currentMusic) {
-                    Music.currentMusic.play();
-                }
-                this.started = true;
-            }
-        }
-    };
-    Steg.prototype.drawLoadingScreen = function (loaded, total) {
-        var _this = this;
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
-        this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
-        this.ctx.fillStyle = "#FFFFFF";
-        this.ctx.font = "20px Helvetica";
-        this.ctx.fillText("Loading " + loaded + "/" + total, 50, 50);
-        this.fillRect(50, 60, (this.canvas.width - 100), 20, "#555555");
-        this.fillRect(50, 60, (this.canvas.width - 100) * (loaded / total), 20, "#0000FF");
-        if (total == loaded) {
-            this.timer = setInterval(function () { _this.tick(); }, 1000 / this.fps);
-        }
-    };
-    Steg.prototype.setupMouseHandler = function () {
-        var _this = this;
-        var hasTouchStartEvent = 'ontouchstart' in document.createElement('div');
-        if (!hasTouchStartEvent) {
-            this.canvas.onmousedown = function (e) {
-                e.preventDefault();
-                _this.invokeMouseDown(1, e.offsetX, e.offsetY);
-            };
-            this.canvas.onmouseup = function (e) {
-                e.preventDefault();
-                _this.invokeMouseUp(1, e.offsetX, e.offsetY);
-            };
-            this.canvas.onmousemove = function (e) {
-                e.preventDefault();
-                _this.invokeMouseMove(1, e.offsetX, e.offsetY);
-            };
-        }
-        else {
-            this.canvas.ontouchstart = function (e) {
-                e.preventDefault();
-                for (var i = 0; i < e.changedTouches.length; i++) {
-                    _this.invokeMouseDown(e.changedTouches.item(i).identifier, e.changedTouches.item(i).pageX, e.changedTouches.item(i).pageY);
-                }
-            };
-            this.canvas.ontouchend = function (e) {
-                e.preventDefault();
-                for (var i = 0; i < e.changedTouches.length; i++) {
-                    _this.invokeMouseUp(e.changedTouches.item(i).identifier, e.changedTouches.item(i).pageX, e.changedTouches.item(i).pageY);
-                }
-            };
-            this.canvas.ontouchmove = function (e) {
-                e.preventDefault();
-            };
-        }
-    };
-    Steg.prototype.setSoundOn = function (soundOn) {
-        if (!this.audioContext) {
-            return;
-        }
-        Steg.soundOn = soundOn;
-    };
-    Steg.prototype.getSoundOn = function () {
-        if (!this.audioContext) {
-            return false;
-        }
-        return Steg.soundOn;
-    };
-    Steg.prototype.setMusicOn = function (musicOn) {
-        if (!this.audioContext) {
-            return;
-        }
-        Steg.musicOn = musicOn;
-        if (Music.currentMusic) {
-            if (musicOn) {
-                Music.currentMusic.play();
-            }
-            else {
-                Music.currentMusic.stop();
-            }
-        }
-    };
-    Steg.prototype.getMusicOn = function () {
-        if (!this.audioContext) {
-            return false;
-        }
-        return Steg.musicOn;
-    };
-    Steg.prototype.invokeMouseDown = function (id, x, y) {
-        this.doStart();
-        this.game.mouseDown(this, id + 1, x, y);
-    };
-    Steg.prototype.invokeMouseUp = function (id, x, y) {
-        this.doStart();
-        this.game.mouseUp(this, id + 1, x, y);
-    };
-    Steg.prototype.invokeMouseMove = function (id, x, y) {
-    };
-    Steg.prototype.tick = function () {
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
-        if (this.started) {
-            this.game.update(this);
-            this.game.render(this);
-        }
-        else {
-            this.fillRect(0, 0, this.canvas.width, this.canvas.height, "#000000");
-            if (this.startImage) {
-                this.startImage.draw(this, (this.canvas.width - this.startImage.width) / 2, (this.canvas.height - this.startImage.height) / 2);
-            }
-            else {
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.font = "20px Helvetica";
-                this.ctx.fillText("Tap or Click to Start", 50, 50);
-            }
-        }
-    };
-    Steg.prototype.setFontSize = function (size) {
-        this.ctx.font = size + "px Helvetica";
-    };
-    Steg.prototype.drawText = function (txt, x, y, col) {
-        this.ctx.fillStyle = col;
-        this.ctx.fillText(txt, x, y);
-    };
-    Steg.prototype.centerText = function (txt, y, col) {
-        this.ctx.fillStyle = col;
-        this.ctx.textAlign = "center";
-        this.ctx.fillText(txt, this.canvas.width / 2, y);
-    };
-    Steg.prototype.fillRect = function (x, y, width, height, col) {
-        this.ctx.fillStyle = col;
-        this.ctx.fillRect(x, y, width, height);
-    };
-    Steg.soundOn = true;
-    Steg.musicOn = true;
-    Steg.audioReady = false;
-    return Steg;
-}());
-/// <reference path="Steg.ts"/>
-/// <reference path="../Steg.ts"/>
-var Bitmap = /** @class */ (function () {
-    function Bitmap(url) {
-        this.url = url;
-    }
-    Bitmap.prototype.load = function (steg, callback) {
-        var _this = this;
-        this.image = new Image();
-        this.image.onload = function () {
-            _this.loaded();
-            callback(_this);
-        };
-        this.image.src = this.url;
-    };
-    Bitmap.prototype.loaded = function () {
-        this.width = this.image.width;
-        this.height = this.image.height;
-    };
-    Bitmap.prototype.drawScaled = function (steg, x, y, width, height) {
-        var ctx = steg.ctx;
-        ctx.drawImage(this.image, x, y, width, height);
-    };
-    Bitmap.prototype.draw = function (steg, x, y) {
-        var ctx = steg.ctx;
-        ctx.drawImage(this.image, x, y);
-    };
-    Bitmap.prototype.getName = function () {
-        return "Bitmap [" + this.url + "]";
-    };
-    return Bitmap;
-}());
-/// <reference path="Bitmap.ts"/>
-var Tileset = /** @class */ (function (_super) {
-    __extends(Tileset, _super);
-    function Tileset(url, tileWidth, tileHeight) {
-        var _this = _super.call(this, url) || this;
-        _this.tileWidth = tileWidth;
-        _this.tileHeight = tileHeight;
-        return _this;
-    }
-    Tileset.prototype.loaded = function () {
-        this.scanline = Math.floor(this.image.width / this.tileWidth);
-    };
-    Tileset.prototype.getName = function () {
-        return "Tileset [" + this.url + "]";
-    };
-    Tileset.prototype.drawTile = function (steg, x, y, tile) {
-        var xp = Math.floor(tile % this.scanline);
-        var yp = Math.floor(tile / this.scanline);
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, this.tileWidth, this.tileHeight);
-    };
-    Tileset.prototype.drawTileScaled = function (steg, x, y, width, height, tile) {
-        var xp = Math.floor(tile % this.scanline);
-        var yp = Math.floor(tile / this.scanline);
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, width, height);
-    };
-    Tileset.prototype.drawTileReverse = function (steg, x, y, tile) {
-        var xp = Math.floor(tile % this.scanline);
-        var yp = Math.floor(tile / this.scanline);
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
-        steg.ctx.scale(-1, 1);
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, -(x + this.tileWidth), y, this.tileWidth, this.tileHeight);
-        steg.ctx.scale(-1, 1);
-    };
-    return Tileset;
-}(Bitmap));
-/// <reference path="resources/Resource.ts"/>
-/// <reference path="resources/Bitmap.ts"/>
-/// <reference path="resources/Tileset.ts"/>
-var Resources = /** @class */ (function () {
-    function Resources() {
-    }
-    Resources.loadMusic = function (url) {
-        var music = new Music(url);
-        this.added.push(music);
-        return music;
-    };
-    Resources.loadSound = function (url) {
-        var sound = new Sound(url);
-        this.added.push(sound);
-        return sound;
-    };
-    Resources.laodBitmap = function (url) {
-        var bitmap = new Bitmap(url);
-        this.added.push(bitmap);
-        return bitmap;
-    };
-    Resources.loadTileset = function (url, tileWidth, tileHeight) {
-        var tileset = new Tileset(url, tileWidth, tileHeight);
-        this.added.push(tileset);
-        return tileset;
-    };
-    Resources.load = function (steg, callback) {
-        var _this = this;
-        this.callback = callback;
-        this.steg = steg;
-        for (var i = 0; i < this.added.length; i++) {
-            this.added[i].load(this.steg, function (res) { _this.resourceCallback(res); });
-        }
-        steg.drawLoadingScreen(this.loaded.length, this.added.length);
-        if (this.loaded.length == this.added.length) {
-            this.callback();
-        }
-    };
-    Resources.resourceCallback = function (res) {
-        console.log("Loaded: " + res.getName());
-        this.loaded.push(res);
-        this.steg.drawLoadingScreen(this.loaded.length, this.added.length);
-        if (this.loaded.length == this.added.length) {
-            this.callback();
-        }
-    };
-    Resources.added = [];
-    Resources.loaded = [];
-    return Resources;
-}());
-/// <reference path="../Steg.ts"/>
-/// <reference path="Resource.ts"/>
-var Music = /** @class */ (function () {
-    function Music(url) {
-        this.loaded = false;
-        this.url = url;
-    }
-    Music.prototype.load = function (steg, callback) {
-        var _this = this;
-        if (!steg.audioContext) {
-            console.log("No audio context. No Sound");
-            callback(this);
-        }
-        else {
-            this.audioContext = steg.audioContext;
-            var request = new XMLHttpRequest();
-            request.open('GET', this.url, true);
-            request.responseType = 'arraybuffer';
-            request.onload = function () {
-                steg.audioContext.decodeAudioData(request.response, function (audioBuffer) {
-                    _this.audioBuffer = audioBuffer;
-                    callback(_this);
-                });
-            };
-            request.onerror = function (error) { console.log(error); };
-            request.send();
-        }
-    };
-    Music.prototype.createSource = function (volume) {
-        var bufferSource = this.audioContext.createBufferSource();
-        bufferSource.buffer = this.audioBuffer;
-        var gainNode = this.audioContext.createGain();
-        gainNode.gain.value = volume;
-        gainNode.connect(this.audioContext.destination);
-        bufferSource.connect(gainNode);
-        this.lastSource = bufferSource;
-        return bufferSource;
-    };
-    Music.prototype.playImpl = function () {
-        if ((Steg.musicOn) && (Steg.audioReady)) {
-            if (this.audioBuffer) {
-                var source = this.createSource(1.0);
-                source.loop = true;
-                source.start();
-            }
-        }
-    };
-    Music.prototype.play = function () {
-        if (Music.currentMusic) {
-            Music.currentMusic.stop();
-        }
-        Music.currentMusic = this;
-        this.playImpl();
-    };
-    Music.prototype.stop = function () {
-        if (this.lastSource) {
-            this.lastSource.stop();
-            this.lastSource = null;
-        }
-    };
-    Music.prototype.getName = function () {
-        return "Music [" + this.url + "]";
-    };
-    return Music;
-}());
-/// <reference path="Resource.ts"/>
-var Sound = /** @class */ (function () {
-    function Sound(url) {
-        this.loaded = false;
-        this.url = url;
-    }
-    Sound.prototype.load = function (steg, callback) {
-        var _this = this;
-        if (!steg.audioContext) {
-            console.log("No audio context. No Sound");
-            callback(this);
-        }
-        else {
-            this.audioContext = steg.audioContext;
-            var request = new XMLHttpRequest();
-            request.open('GET', this.url, true);
-            request.responseType = 'arraybuffer';
-            request.onload = function () {
-                steg.audioContext.decodeAudioData(request.response, function (audioBuffer) {
-                    _this.audioBuffer = audioBuffer;
-                    callback(_this);
-                });
-            };
-            request.onerror = function (error) { console.log(error); };
-            request.send();
-        }
-    };
-    Sound.prototype.createSource = function (volume) {
-        var bufferSource = this.audioContext.createBufferSource();
-        bufferSource.buffer = this.audioBuffer;
-        var gainNode = this.audioContext.createGain();
-        gainNode.gain.value = volume;
-        gainNode.connect(this.audioContext.destination);
-        bufferSource.connect(gainNode);
-        return bufferSource;
-    };
-    Sound.prototype.play = function (volume) {
-        if ((Steg.soundOn) && (Steg.audioReady)) {
-            if (this.audioBuffer) {
-                var source = this.createSource(volume);
-                source.loop = false;
-                source.start();
-            }
-        }
-    };
-    Sound.prototype.getName = function () {
-        return "Sound [" + this.url + "]";
-    };
-    return Sound;
-}());
-/// <reference path="engine/Steg.ts"/>
-/// <reference path="engine/Steggi.ts"/>
+/// <reference path="engine/Core.ts"/>
+/// <reference path="engine/Game.ts"/>
 /// <reference path="engine/Resources.ts"/>
 /// <reference path="engine/resources/Music.ts"/>
 /// <reference path="engine/resources/Sound.ts"/>
 /// <reference path="Anim.ts"/>
 /// <reference path="Dinos.ts"/>
-var Game = /** @class */ (function () {
-    function Game() {
+var Core = steg.Core;
+var Resources = steg.Resources;
+var Bitmap = steg.Bitmap;
+var Sound = steg.Sound;
+var Music = steg.Music;
+var Tileset = steg.Tileset;
+var DinoGame = /** @class */ (function () {
+    function DinoGame() {
         this.scroll = 0;
         this.lastStep = 0;
         this.count = 0;
@@ -612,13 +651,13 @@ var Game = /** @class */ (function () {
         this.propVar = 400;
         this.effects = [];
     }
-    Game.prototype.init = function (steg) {
+    DinoGame.prototype.init = function (core) {
         this.music = Resources.loadMusic("audio/music.mp3");
         this.stepSfx = Resources.loadSound("audio/step.mp3");
         this.booshSfx = Resources.loadSound("audio/boosh.mp3");
         this.bg = Resources.laodBitmap("img/bg.png");
         this.fg = Resources.laodBitmap("img/fg.png");
-        steg.setStartImage(Resources.laodBitmap("img/start.png"));
+        core.setStartImage(Resources.laodBitmap("img/start.png"));
         this.worldTileset = Resources.loadTileset("img/world1.png", 128, 128);
         this.propTileset = Resources.loadTileset("img/props.png", 160, 128);
         this.propCutTileset = Resources.loadTileset("img/props.png", 40, 32);
@@ -635,17 +674,17 @@ var Game = /** @class */ (function () {
         this.selectDino(this.selectedDinoData);
         this.selectedDino = new Dino(this.selectedDinoData);
     };
-    Game.prototype.addEffect = function (effect) {
+    DinoGame.prototype.addEffect = function (effect) {
         this.effects.push(effect);
     };
-    Game.prototype.createProp = function (x) {
+    DinoGame.prototype.createProp = function (x) {
         var prop = new Prop();
         prop.x = x;
         prop.type = Math.floor(Math.random() * 8);
         prop.flip = Math.random() > 0.5;
         this.props.push(prop);
     };
-    Game.prototype.validateProps = function () {
+    DinoGame.prototype.validateProps = function () {
         for (var i = 0; i < this.props.length; i++) {
             var prop = this.props[i];
             var xp = prop.x - (this.scroll * this.speed);
@@ -663,39 +702,39 @@ var Game = /** @class */ (function () {
             }
         }
     };
-    Game.prototype.generateProps = function () {
+    DinoGame.prototype.generateProps = function () {
         var x = this.scroll - this.viewDistance;
         while (x < this.scroll + this.viewDistance) {
             this.createProp(x);
             x += this.propSep + Math.floor(Math.random() * this.propVar);
         }
     };
-    Game.prototype.selectDino = function (dinoData) {
+    DinoGame.prototype.selectDino = function (dinoData) {
         this.dino = new Dino(dinoData);
     };
-    Game.prototype.loaded = function (steg) {
+    DinoGame.prototype.loaded = function (core) {
         this.music.play();
     };
-    Game.prototype.roarAtProps = function (steg) {
+    DinoGame.prototype.roarAtProps = function (core) {
         for (var i = 0; i < this.props.length; i++) {
             var prop = this.props[i];
             var xp = prop.x - (this.scroll * this.speed);
-            var dx = xp - (steg.canvas.width / 2);
+            var dx = xp - (core.canvas.width / 2);
             if ((this.dino.facingRight) && (dx > 0) && (dx < 200)) {
-                if (prop.roared(this, steg)) {
+                if (prop.roared(this, core)) {
                     this.props.splice(this.props.indexOf(prop), 1);
                     i--;
                 }
             }
             if ((!this.dino.facingRight) && (dx < 0) && (dx > -300)) {
-                if (prop.roared(this, steg)) {
+                if (prop.roared(this, core)) {
                     this.props.splice(this.props.indexOf(prop), 1);
                     i--;
                 }
             }
         }
     };
-    Game.prototype.update = function (steg) {
+    DinoGame.prototype.update = function (core) {
         var _this = this;
         this.move = 0;
         if (!this.roar) {
@@ -706,21 +745,21 @@ var Game = /** @class */ (function () {
                 this.move = 1;
             }
         }
-        this.dino.update(steg, function () {
+        this.dino.update(core, function () {
             if (_this.roar != 0) {
                 _this.roar = 0;
-                _this.roarAtProps(steg);
+                _this.roarAtProps(core);
             }
         });
         for (var i = 0; i < this.effects.length; i++) {
             var effect = this.effects[i];
-            effect.update(steg);
-            if (effect.complete(steg)) {
+            effect.update(core);
+            if (effect.complete(core)) {
                 this.effects.splice(i, 1);
                 i--;
             }
         }
-        this.selectedDino.update(steg, function () { });
+        this.selectedDino.update(core, function () { });
         this.scroll += this.move * 0.01;
         if (this.roar) {
             if (this.dino.getAnimName() != Anim.ATTACK) {
@@ -733,7 +772,7 @@ var Game = /** @class */ (function () {
                 if (this.selectedDinoData.steps) {
                     // sound sfx for steps
                     var now = new Date().getTime();
-                    if (now - this.lastStep > Game.STEP_INTERVAL) {
+                    if (now - this.lastStep > DinoGame.STEP_INTERVAL) {
                         this.lastStep = now;
                         this.stepSfx.play(0.6);
                     }
@@ -751,7 +790,7 @@ var Game = /** @class */ (function () {
         }
         this.validateProps();
     };
-    Game.prototype.render = function (steg) {
+    DinoGame.prototype.render = function (steg) {
         var bgScale = steg.canvas.height / 768;
         var bgWidth = 1280 * bgScale;
         var bgCount = Math.floor(steg.canvas.width / bgWidth) + 2;
@@ -810,7 +849,7 @@ var Game = /** @class */ (function () {
             steg.centerText(this.selectedDinoData.name, (steg.canvas.height / 2) + 60, "#fff");
         }
     };
-    Game.prototype.mouseUp = function (steg, id, x, y) {
+    DinoGame.prototype.mouseUp = function (steg, id, x, y) {
         if (this.showSelect) {
             return;
         }
@@ -821,7 +860,7 @@ var Game = /** @class */ (function () {
             this.right = 0;
         }
     };
-    Game.prototype.mouseDown = function (steg, id, x, y) {
+    DinoGame.prototype.mouseDown = function (steg, id, x, y) {
         if (this.showSelect) {
             if (x < (steg.canvas.width / 2) - 200) {
                 this.currentSelectedIndex--;
@@ -870,8 +909,8 @@ var Game = /** @class */ (function () {
             this.roar = id;
         }
     };
-    Game.STEP_INTERVAL = 300;
-    return Game;
+    DinoGame.STEP_INTERVAL = 300;
+    return DinoGame;
 }());
 var PopEffect = /** @class */ (function () {
     function PopEffect(tileset, type, x) {
@@ -886,13 +925,13 @@ var PopEffect = /** @class */ (function () {
         this.ty *= 4;
         console.log("POP");
     }
-    PopEffect.prototype.update = function (steg) {
+    PopEffect.prototype.update = function (core) {
         if (!this.init) {
             this.init = true;
             for (var xp = 0; xp < 4; xp++) {
                 for (var yp = 0; yp < 4; yp++) {
                     var px = this.x + (xp * 40);
-                    var py = steg.canvas.height - 140 - 125 + (yp * 32);
+                    var py = core.canvas.height - 140 - 125 + (yp * 32);
                     var pt = (this.tx + xp) + (this.ty + (yp * 16));
                     var vx = (xp - 2) * 5;
                     var vy = (yp - 4) * 7;
@@ -909,13 +948,13 @@ var PopEffect = /** @class */ (function () {
             part.vy += 2;
         }
     };
-    PopEffect.prototype.render = function (steg, viewPos) {
+    PopEffect.prototype.render = function (core, viewPos) {
         for (var i = 0; i < this.particles.length; i++) {
             var part = this.particles[i];
-            this.tileset.drawTile(steg, part.x - viewPos, part.y, part.tile);
+            this.tileset.drawTile(core, part.x - viewPos, part.y, part.tile);
         }
     };
-    PopEffect.prototype.complete = function (steg) {
+    PopEffect.prototype.complete = function (core) {
         return false;
     };
     return PopEffect;
@@ -923,7 +962,7 @@ var PopEffect = /** @class */ (function () {
 var Prop = /** @class */ (function () {
     function Prop() {
     }
-    Prop.prototype.roared = function (game, steg) {
+    Prop.prototype.roared = function (game, core) {
         // if its a stone
         if ((this.type == 0) || (this.type == 1) || (this.type == 2)) {
             // do a little particle effect

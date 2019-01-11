@@ -1,5 +1,8 @@
-interface Resource {
-    load(steg: Steg, callback: (res: Resource) => void ): void;
+namespace steg {
 
-    getName(): string;
+    export interface Resource {
+        load(steg: Core, callback: (res: Resource) => void): void;
+
+        getName(): string;
+    }
 }

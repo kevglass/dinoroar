@@ -1,7 +1,7 @@
 interface Effect {
-    update(steg: Steg): void;
+    update(core: Core): void;
 
-    render(steg: Steg, viewPos: number): void;
+    render(core: Core, viewPos: number): void;
 
-    complete(steg: Steg): boolean;
+    complete(core: Core): boolean;
 }

@@ -3,7 +3,7 @@ class Prop {
     type: number;
     flip: boolean;
     
-    roared(game: Game, steg: Steg): boolean {
+    roared(game: DinoGame, core: Core): boolean {
         // if its a stone
         if ((this.type == 0) || (this.type == 1) || (this.type == 2)) {
             // do a little particle effect

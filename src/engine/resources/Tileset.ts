@@ -1,54 +1,57 @@
 /// <reference path="Bitmap.ts"/>
 
-class Tileset extends Bitmap {
-    tileWidth: number;
-    tileHeight: number;
-    scanline: number;
+namespace steg {
 
-    constructor(url: string, tileWidth: number, tileHeight: number) {
-        super(url);
+    export class Tileset extends Bitmap {
+        tileWidth: number;
+        tileHeight: number;
+        scanline: number;
 
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-    }
+        constructor(url: string, tileWidth: number, tileHeight: number) {
+            super(url);
 
-    loaded(): void {
-        this.scanline = Math.floor(this.image.width / this.tileWidth);
-    }
+            this.tileWidth = tileWidth;
+            this.tileHeight = tileHeight;
+        }
 
-    getName(): string {
-        return "Tileset ["+this.url+"]";
-    }
+        loaded(): void {
+            this.scanline = Math.floor(this.image.width / this.tileWidth);
+        }
 
-    drawTile(steg: Steg, x: number, y: number, tile: number) {
-        var xp : number = Math.floor(tile % this.scanline);
-        var yp : number = Math.floor(tile / this.scanline);
+        getName(): string {
+            return "Tileset [" + this.url + "]";
+        }
 
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
+        drawTile(steg: Core, x: number, y: number, tile: number) {
+            var xp: number = Math.floor(tile % this.scanline);
+            var yp: number = Math.floor(tile / this.scanline);
 
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, this.tileWidth, this.tileHeight);
-    }
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
 
-    drawTileScaled(steg: Steg, x: number, y: number, width: number, height: number, tile: number) {
-        var xp : number = Math.floor(tile % this.scanline);
-        var yp : number = Math.floor(tile / this.scanline);
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, this.tileWidth, this.tileHeight);
+        }
 
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
+        drawTileScaled(steg: Core, x: number, y: number, width: number, height: number, tile: number) {
+            var xp: number = Math.floor(tile % this.scanline);
+            var yp: number = Math.floor(tile / this.scanline);
 
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, width, height);
-    }
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
 
-    drawTileReverse(steg: Steg, x: number, y: number, tile: number) {
-        var xp : number = Math.floor(tile % this.scanline);
-        var yp : number = Math.floor(tile / this.scanline);
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, x, y, width, height);
+        }
 
-        xp *= this.tileWidth;
-        yp *= this.tileHeight;
+        drawTileReverse(steg: Core, x: number, y: number, tile: number) {
+            var xp: number = Math.floor(tile % this.scanline);
+            var yp: number = Math.floor(tile / this.scanline);
 
-        steg.ctx.scale(-1,1);
-        steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, -(x+this.tileWidth), y, this.tileWidth, this.tileHeight);
-        steg.ctx.scale(-1,1);
+            xp *= this.tileWidth;
+            yp *= this.tileHeight;
+
+            steg.ctx.scale(-1, 1);
+            steg.ctx.drawImage(this.image, xp, yp, this.tileWidth, this.tileHeight, -(x + this.tileWidth), y, this.tileWidth, this.tileHeight);
+            steg.ctx.scale(-1, 1);
+        }
     }
 }
