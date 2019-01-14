@@ -256,7 +256,7 @@ class DinoGame implements Game {
         this.ui.drawTile(steg, (steg.canvas.width / 2) - 44, steg.canvas.height - 100, 6);
         this.ui.drawTileScaled(steg, 5, 5, 44, 46, steg.getSoundOn() ? 3 : 8)
         this.ui.drawTileScaled(steg, 52, 5, 44, 46, steg.getMusicOn() ? 5 : 9)
-        this.ui.drawTileScaled(steg, steg.canvas.width - 50, 5, 44, 46, 7)
+        this.ui.drawTileScaled(steg, steg.canvas.width - 80, 5, 75, 75, 4)
 
         // dino select box
         if (this.showSelect) {
@@ -309,15 +309,18 @@ class DinoGame implements Game {
             }
             return;
         }
-
+        if (y < 75) {
+            if (x > steg.canvas.width - 75) {
+                this.showSelect = true;
+            }
+            return;
+        }
         if (y < 50) {
             if (x < 50) {
                 steg.setSoundOn(!steg.getSoundOn());
             } else if (x < 100) {
                 steg.setMusicOn(!steg.getMusicOn());
-            } else if (x > steg.canvas.width - 50) {
-                this.showSelect = true;
-            }
+            } 
             return;
         }
 
