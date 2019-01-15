@@ -4,7 +4,7 @@
     "module": "System",
     "target": "ES5",
     "sourceMap": true,
-    "declaration": true,
+    "declaration": false,
     "outFile": "../site/game.js",
     "outDir": "../site/",
     "moduleResolution": "classic"
